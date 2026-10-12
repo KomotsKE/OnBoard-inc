@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+
+# Окружение и секреты
+.env
+.env.*
+!.env.example
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
+# Docker-тома
+pgdata/
+
+# Редакторы и ОС
+.idea/
+.vscode/
+.DS_Store
+*.swp
+
+# Логи
+*.log
