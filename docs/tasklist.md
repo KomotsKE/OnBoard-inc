@@ -45,9 +45,13 @@
   по инструкции стек поднимается с нуля.
 
 - [ ] **T0.3 Каркас бэкенда**
-  FastAPI-приложение, `core/config.py` на pydantic-settings, `GET /health`,
-  структура каталогов, подключение к postgres.
-  *проверка:* `curl localhost:8000/health` → 200 `{"status":"ok","db":"ok"}`; pytest на /health зелёный.
+  Асинхронное FastAPI-приложение ([ADR-0010](adr/0010-async-backend.md)):
+  `lifespan` создаёт `AsyncEngine` с явными параметрами пула и `httpx.AsyncClient`
+  с таймаутами (§12.1–12.2 [conventions.md](conventions.md)), `core/config.py`
+  на pydantic-settings, `GET /health` с проверкой БД через `AsyncSession`.
+  *проверка:* `curl localhost:8000/health` → 200 `{"status":"ok","db":"ok"}`;
+  async-тест на /health зелёный; в логах один раз создаётся движок, а не на каждый
+  запрос.
 
 - [ ] **T0.4 Alembic и первая миграция**
   Миграция 001 из §3.1 [data-model.md](data-model.md): `users`, `refresh_sessions`,
@@ -57,7 +61,8 @@
   `INSERT` с email в верхнем регистре отбивается `CHECK`.
 
 - [ ] **T0.5 Линт, тесты, инструменты**
-  `ruff.toml`, `pytest.ini`/`pyproject`, цели `make lint` и `make test`.
+  `ruff.toml`, `pytest.ini`/`pyproject` с `pytest-asyncio` (`asyncio_mode=auto`),
+  цели `make lint` и `make test`.
   *проверка:* `make lint` и `make test` зелёные на пустом наборе тестов.
 
 - [ ] **T0.6 Каркас панели**
@@ -120,7 +125,8 @@
   refresh 30 дней в httpOnly cookie с ротацией через `refresh_sessions`
   ([ADR-0008](adr/0008-session-storage.md), §3.1 [data-model.md](data-model.md)).
   Политика пароля — §5.1 [data-model.md](data-model.md): 12–128 символов, без правил
-  состава, блок-лист top-10000.
+  состава, блок-лист top-10000. Хэширование argon2 выносится в поток
+  (`anyio.to_thread`), иначе вход блокирует event loop (§12.5 conventions.md).
   *проверка:* pytest — успешный вход; неверный пароль → 401; повторная регистрация → 409;
   протухший access → 401; refresh по cookie без тела выдаёт новый access; повторное
   использование ротированного refresh → 401 и сессия закрыта; logout делает cookie
@@ -130,7 +136,7 @@
 - [ ] **T1.2 Проекты**
   CRUD включая `DELETE` (каскад), генерация `public_key`, `allowed_origins`, `theme`
   со значениями по умолчанию, лимиты из §5 [data-model.md](data-model.md), эндпоинт
-  `snippet`.
+  `snippet`. Списковый ответ — в конверте `{items, next_cursor}` (§12.8 conventions.md).
   *проверка:* pytest — CRUD; `public_key` уникален; дефолтная тема присутствует в ответе;
   пустой `allowed_origins` → публичный конфиг отвечает отказом (fail closed);
   11-й проект на пользователя → 422.
@@ -148,7 +154,8 @@
   и `completion_rate_7d` одним агрегатом (§6 [screens.md](screens.md)).
   *проверка:* pytest — публикация меняет статус и `published_at`; невалидный regex → 422;
   публикация тура без шагов → 422; архивный тур не попадает в публичный конфиг;
-  список из 3 туров отдаётся одним запросом с метриками.
+  список из 3 туров отдаётся одним запросом с метриками; тест на число SQL-запросов
+  фиксирует константу — N+1 не проходит (§12.6 conventions.md).
 
 - [ ] **T1.5 Шаги**
   CRUD + изменение порядка одним `UPDATE ... CASE` (уникальность объявлена
@@ -257,9 +264,11 @@
 ## Этап 4 — аналитика
 
 - [ ] **T4.1 Приём событий**
-  Миграция 003 (§3.3 [data-model.md](data-model.md)) и `POST /public/events`: батч,
+  Миграция 003 (§3.3 [data-model.md](data-model.md)) и `POST /public/events`: батч
+  одним `INSERT ... ON CONFLICT` без предварительного `SELECT` (§12.7 conventions.md),
   валидация, проверка `Origin` против `allowed_origins`, идемпотентность по `event_id`,
-  обрезка URL до path, rate limit, всегда 204 при валидном ключе.
+  обрезка URL до path, rate limit за интерфейсом `RateLimiter` (in-memory реализация),
+  всегда 204 при валидном ключе.
   *проверка:* pytest — двойная отправка одного батча → одна строка в БД; чужой Origin
   → 403; битая схема события → 204 и событие отброшено (виджет не ретраит).
 

@@ -43,7 +43,8 @@
 
 ## Стек (зафиксирован)
 
-Бэкенд: Python 3.12, FastAPI, SQLAlchemy 2.0 (sync), Alembic, PostgreSQL 16.
+Бэкенд: Python 3.12, FastAPI, **SQLAlchemy 2.0 async** (psycopg3), Alembic,
+PostgreSQL 16 ([ADR-0010](docs/adr/0010-async-backend.md)).
 Панель: React 18 + TypeScript, Vite, TanStack Query. Виджет: TypeScript, esbuild,
 ноль рантайм-зависимостей. Тесты: pytest + httpx, vitest, Playwright.
 Инфра: docker-compose + Makefile.
@@ -51,7 +52,7 @@
 Разрешённые зависимости:
 
 - бэкенд: `fastapi uvicorn sqlalchemy alembic psycopg[binary] pydantic-settings pyjwt
-  argon2-cffi python-multipart` + dev: `pytest httpx ruff`;
+  argon2-cffi python-multipart httpx anyio` + dev: `pytest pytest-asyncio httpx ruff`;
 - панель: `react react-dom react-router-dom @tanstack/react-query @dnd-kit/core
   @dnd-kit/sortable` + dev: `typescript vite @vitejs/plugin-react vitest`;
 - виджет: рантайм-зависимостей нет; dev: `typescript esbuild size-limit vitest jsdom`;
@@ -98,6 +99,12 @@ make publish-backend / -panel / -widget   зеркала поддеревьев 
 11. **Access-токен панели — только в памяти**, refresh — только в httpOnly cookie.
     В `localStorage` панели не хранится ничего, кроме UI-мелочей.
     ([ADR-0008](docs/adr/0008-session-storage.md))
+12. **Готовность к росту без переписывания.** Ресурсы с пулами (`AsyncEngine`,
+    `httpx.AsyncClient`) создаются один раз в `lifespan` с явными параметрами и
+    таймаутами; состояние, живущее дольше запроса, не хранится в памяти процесса
+    (только за интерфейсом, как `RateLimiter`); сетевых вызовов внутри открытой
+    транзакции нет; event loop не блокируется (argon2 — в поток); списковые ответы —
+    в конверте с пагинацией. Полный список — §12 [docs/conventions.md](docs/conventions.md).
 
 ## Как пишем код
 
@@ -105,6 +112,9 @@ make publish-backend / -panel / -widget   зеркала поддеревьев 
 
 - **KISS и YAGNI**: простейшее решение задачи; абстракция — со второго использования,
   параметр — со второго значения. Заготовок «на будущее» нет.
+- **Обратимость вместо запаса прочности**: закладываем границы (пулы, таймауты,
+  интерфейсы, конверты, идемпотентность), не строим механизмы без нагрузки. Вопрос
+  для проверки: при росте нагрузки в 100 раз это переписывать или донастраивать?
 - **DRY по правилу трёх**: дублирование убираем на третьем повторении, не на втором.
 - **SOLID прагматично**: SRP и DIP соблюдаем всегда (сервис не знает про HTTP),
   остальное — только когда задача попросит. Интерфейс под одну реализацию запрещён.
