@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(make *)",
+      "Bash(pytest *)",
+      "Bash(python -m pytest *)",
+      "Bash(ruff *)",
+      "Bash(alembic *)",
+      "Bash(npm ci *)",
+      "Bash(npm run *)",
+      "Bash(npm test *)",
+      "Bash(npx vitest *)",
+      "Bash(npx tsc *)",
+      "Bash(npx playwright *)",
+      "Bash(docker compose up *)",
+      "Bash(docker compose down *)",
+      "Bash(docker compose build *)",
+      "Bash(docker compose ps *)",
+      "Bash(docker compose logs *)",
+      "Bash(docker compose exec *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)"
+    ]
+  }
+}
