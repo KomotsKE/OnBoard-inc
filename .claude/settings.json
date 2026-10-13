@@ -22,5 +22,9 @@
       "Bash(git diff *)",
       "Bash(git log *)"
     ]
+  },
+  "attribution": {
+    "commit": "",
+    "pr": ""
   }
 }
