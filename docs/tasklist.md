@@ -391,6 +391,7 @@
 **Инфраструктура**
 
 - [ ] `make up` поднимает postgres, api, panel и стенд; `make down` всё гасит (T0.2, T0.3, T0.6, T0.8)
+- [ ] миграции применяются на чистую БД и откатываются обратно (T0.4)
 - [ ] `make lint` и `make test` зелёные (T0.5)
 - [x] коммиты по Conventional Commits, хуки `pre-commit` и `commit-msg` работают (T0.9)
 - [ ] CI прогоняет тесты на каждый push и pull request (T0.12)
