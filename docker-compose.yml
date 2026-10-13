@@ -1,0 +1,49 @@
+# Локальный стек OnBoard. Разворачивание на сервере — после приёмки MVP (§15 docs/vision.md).
+# Сервисы api и panel добавляются в задачах T0.3 и T0.6, migrate — в T0.4:
+# контейнер без кода падал бы в рестарт-луп.
+
+name: onboard
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      # C.UTF-8 — детерминированная сортировка, не зависящая от локали хоста.
+      # Списки в панели сортируются по created_at, поэтому порядок букв не важен,
+      # а воспроизводимость важна.
+      POSTGRES_INITDB_ARGS: "--locale=C.UTF-8 --encoding=UTF8"
+      TZ: UTC
+      PGTZ: UTC
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  testsite:
+    # Непривилегированный образ: слушает 8080 и работает не от root.
+    image: nginxinc/nginx-unprivileged:1.27-alpine
+    ports:
+      - "${TESTSITE_PORT:-8080}:8080"
+    volumes:
+      - ./testsite:/usr/share/nginx/html:ro
+    healthcheck:
+      # Именно 127.0.0.1, а не localhost: внутри контейнера localhost разрешается
+      # в ::1, а nginx слушает только IPv4 — проверка падала бы на здоровом сервисе.
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  pgdata:

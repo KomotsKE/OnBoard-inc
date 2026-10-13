@@ -12,14 +12,24 @@ help: ## показать список целей
 	@echo
 	@echo "Документы: docs/tasklist.md — план работ, CLAUDE.md — правила проекта"
 
-up: ## поднять стек (postgres, api, panel, testsite)
-	$(call STUB,T0.2)
+env: ## создать .env из шаблона, если его нет
+	@if [ ! -f .env ]; then \
+		cp .env.example .env; \
+		echo "  создан .env из .env.example — проверьте значения перед первым запуском"; \
+	fi
 
-down: ## остановить стек
-	$(call STUB,T0.2)
+up: env ## поднять стек (postgres, стенд; api и panel — T0.3 и T0.6)
+	docker compose up -d --wait
+	@echo
+	@docker compose ps
+	@echo
+	@echo "  стенд: http://localhost:$$(grep -E '^TESTSITE_PORT=' .env | cut -d= -f2)"
+
+down: ## остановить стек (данные в томе pgdata сохраняются)
+	docker compose down
 
 logs: ## логи стека
-	$(call STUB,T0.2)
+	docker compose logs -f --tail=100
 
 migrate: ## применить миграции
 	$(call STUB,T0.4)
