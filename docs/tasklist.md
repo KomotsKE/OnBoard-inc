@@ -39,13 +39,19 @@
   §1 conventions.md; `git status` чист после первого коммита.
 
 - [ ] **T0.2 docker-compose**
-  postgres:16 (с healthcheck и volume), api, panel, testsite; `.env.example`;
-  инструкция `guides/local-setup.md`.
-  *проверка:* `make up` → все контейнеры healthy; `docker compose ps` без restarting;
-  по инструкции стек поднимается с нуля.
+  postgres:16 (healthcheck, volume, `--locale=C.UTF-8`, `TZ=UTC`) и testsite;
+  `.env.example` по §13 [conventions.md](conventions.md); отдельный одноразовый сервис
+  `migrate`, от успешного завершения которого зависит `api`
+  (`service_completed_successfully`); образы с непривилегированным пользователем;
+  `.dockerignore`; инструкция `guides/local-setup.md`. Сервисы `api` и `panel`
+  добавляются в T0.3 и T0.6 — контейнер без кода падал бы в рестарт-луп.
+  *проверка:* `make up` → postgres healthy и стенд на :8080 отвечает;
+  `docker compose ps` без restarting; по инструкции стек поднимается с нуля;
+  старт без `JWT_SECRET` завершается ошибкой, а не дефолтным ключом.
 
 - [ ] **T0.3 Каркас бэкенда**
-  Асинхронное FastAPI-приложение ([ADR-0010](adr/0010-async-backend.md)):
+  Асинхронное FastAPI-приложение ([ADR-0010](adr/0010-async-backend.md)) с
+  JSON-логами и `request_id` (§9.3 [vision.md](vision.md)):
   `lifespan` создаёт `AsyncEngine` с явными параметрами пула и `httpx.AsyncClient`
   с таймаутами (§9.1 [vision.md](vision.md)), `statement_timeout` раздельно для
   публичных и панельных маршрутов, `core/config.py` на pydantic-settings,
@@ -163,7 +169,9 @@
 
 - [ ] **T1.5 Шаги**
   CRUD + изменение порядка одним `UPDATE ... CASE` (уникальность объявлена
-  `DEFERRABLE`, §3.2 [data-model.md](data-model.md)).
+  `DEFERRABLE`, §3.2 [data-model.md](data-model.md)); удаление последнего шага
+  опубликованного тура снимает тур с публикации и возвращает новый статус (§8.2
+  [vision.md](vision.md)).
   *проверка:* pytest — после `PUT /steps/order` позиции 0..N−1 без дыр и дублей;
   перестановка шага с 3-й позиции на 1-ю проходит одним оператором;
   два конкурентных reorder одного тура не нарушают уникальность.
@@ -177,11 +185,12 @@
 ## Этап 2 — виджет
 
 - [ ] **T2.1 Loader**
-  Чтение `data-key`/`data-api`, запрос конфига с `AbortController` (3 с, §9.1
-  [vision.md](vision.md)), ленивая загрузка `core.js` только при наличии подходящего
-  тура, `widget_ping`.
+  Чтение `data-key`/`data-api`, защита от повторной инициализации по `window.OnBoard`,
+  запрос конфига с `AbortController` (3 с, §9.1 [vision.md](vision.md)), ленивая
+  загрузка `core.js` только при наличии подходящего тура, `widget_ping`.
   *проверка:* e2e — на странице без тура `core.js` не запрашивается (проверяем по
-  списку сетевых запросов); с туром — запрашивается один раз.
+  списку сетевых запросов); с туром — запрашивается один раз; сниппет, вставленный
+  дважды, даёт один оверлей и один запрос конфига.
 
 - [ ] **T2.2 ElementResolver**
   Поиск по селектору, ожидание появления через MutationObserver (таймаут 10 с),
