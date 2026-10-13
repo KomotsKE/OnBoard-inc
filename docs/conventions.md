@@ -456,6 +456,64 @@ SQL-запросов: он фиксирует константу, а не «ск
 такие дыры живут годами, потому что «и так работает». Это применение принципа
 fail fast из §1 [vision.md](vision.md).
 
+### 13.1 Единственная точка доступа к настройкам
+
+`backend/app/core/config.py` — один класс и одна функция, больше настройки нигде не
+читаются:
+
+```python
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        extra="forbid",   # опечатка в .env валит старт, а не работает молча
+        frozen=True,      # настройки не меняются в рантайме
+    )
+
+    env: Literal["dev", "prod"] = "dev"
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+
+    # без значений по умолчанию — отсутствие валит старт
+    database_url: PostgresDsn
+    jwt_secret: SecretStr
+    editor_token_secret: SecretStr
+    public_api_url: AnyHttpUrl
+    panel_origin: AnyHttpUrl
+
+    # пул и таймауты — §9.1 vision.md
+    db_pool_size: int = 10
+    db_max_overflow: int = 10
+    db_pool_timeout_s: int = 5
+    db_pool_recycle_s: int = 1800
+    db_statement_timeout_public_ms: int = 2_000
+    db_statement_timeout_panel_ms: int = 5_000
+
+    # сроки жизни токенов — ADR-0008, §9 data-model.md
+    access_token_ttl_min: int = 15
+    refresh_token_ttl_days: int = 30
+    editor_token_ttl_min: int = 15
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+```
+
+Правила:
+
+- **`SecretStr` для всех секретов.** Его `repr` печатает `**********`, поэтому секрет
+  не утечёт ни в лог, ни в стектрейс, ни в вывод отладчика — прямая поддержка правила
+  §9.3 vision.md о том, что токенов в логах не бывает.
+- **`extra="forbid"`** — опечатка `JWT_SECRIT` в `.env` остановит приложение вместо
+  того, чтобы молча оставить настройку по умолчанию.
+- **Значения по умолчанию только у безопасных настроек.** У секретов и адресов их нет:
+  pydantic поднимет `ValidationError` при старте.
+- **Доступ через `get_settings()`** и зависимость FastAPI, а не через глобальную
+  переменную модуля: так настройки подменяются в тестах переопределением зависимости.
+- **Числа из таблиц §9.1 и §9.2 vision.md живут здесь**, а не литералами в коде
+  (§9.4 — никаких магических чисел).
+- В тестах настройки задаются переменными окружения или `get_settings` override,
+  а не присваиванием полей.
+
 Секреты не попадают ни в репозиторий, ни в логи, ни в сообщения об ошибках.
 `.env.example` содержит имена переменных и примеры **нерабочих** значений.
 `.env` в `.gitignore` с первого коммита.

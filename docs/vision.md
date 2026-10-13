@@ -748,6 +748,37 @@ GET    /v1/tours/{id}/analytics?range=7d|30d
 - Виджет на сайте клиента пишет только в `console.debug` с префиксом `[OnBoard]`
   (§6 conventions.md): чужая консоль — не наше место для диагностики.
 
+**Журнал значимых операций.** Кроме записи о завершении запроса логируется каждая
+операция, изменяющая состояние или относящаяся к безопасности. Имя события — точечное,
+чтобы по нему можно было фильтровать; запись делается **после успешного коммита**,
+иначе лог сообщит о том, что откатилось.
+
+| Событие | Уровень | Поля сверх обязательных |
+|---|---|---|
+| `app.started` | INFO | версия, параметры пула, `env` |
+| `app.stopping` | INFO | — |
+| `migrations.applied` | INFO | ревизия |
+| `user.registered` | INFO | `user_id` |
+| `user.login.success` | INFO | `user_id` |
+| `user.login.failed` | WARNING | причина (`unknown_email` / `bad_password`), **без email и без IP** |
+| `user.logout` | INFO | `user_id` |
+| `auth.refresh.rotated` | INFO | `user_id`, `family_id` |
+| `auth.refresh.reuse_detected` | ERROR | `user_id`, `family_id` — признак кражи токена, вся цепочка погашена |
+| `project.created` / `.updated` / `.deleted` | INFO | `project_id` |
+| `tour.created` / `.published` / `.unpublished` / `.deleted` | INFO | `tour_id`, предыдущий и новый статус |
+| `tour.auto_unpublished` | WARNING | `tour_id` — снят с публикации удалением последнего шага (§8.2) |
+| `step.created` / `.updated` / `.deleted` | INFO | `tour_id`, `step_id` |
+| `steps.reordered` | INFO | `tour_id`, число шагов |
+| `editor_session.issued` | INFO | `tour_id`, `mode` (`edit` / `preview`) |
+| `editor_session.rejected` | WARNING | причина (`expired` / `foreign_tour`) |
+| `widget.first_seen` | INFO | `project_id` — первое подключение виджета на проекте |
+| `events.batch_accepted` | INFO | `project_id`, принято, отброшено дублей |
+| `events.batch_rejected` | WARNING | `project_id`, причина (`forbidden_origin` / `rate_limited`) |
+| `rate_limit.exceeded` | WARNING | бакет, `project_id` или `user_id` — **без IP** |
+
+IP в журнал не попадает даже там, где он является ключом лимита: инвариант №7 не знает
+исключений, а для разбора инцидента достаточно `project_id` и бакета.
+
 Метрик, трассировки и внешнего сборщика в MVP нет — это механизмы, под которые нет
 нагрузки (§1). JSON выбран именно для того, чтобы подключить сборщик потом без правок
 кода.
@@ -833,5 +864,6 @@ GET    /v1/tours/{id}/analytics?range=7d|30d
 | Верификация домена проекта | не делаем; достаточно списка `allowed_origins`, заполняемого владельцем вручную | проверка `Origin` в публичном API остаётся (защита от чужого использования ключа), но доказательство владения доменом не требуется; строка о верификации убрана из рисков |
 | Количество проектов на пользователя | несколько | переключатель проектов присутствует в UI панели с первой версии; `project_id` обязателен в маршрутах панели (`/projects/:id/...`) |
 | Язык интерфейса | только русский | строки пишем прямо в компонентах, без i18n-библиотеки и словарей; добавление en — отдельная задача после MVP |
+| Файл лицензии | не нужен | `LICENSE` не добавляем; юридически действует «все права защищены», что соответствует проприетарной платформе. Вопрос закрыт, повторно не поднимаем |
 
 Все технические решения из §4–§11 приняты без изменений.

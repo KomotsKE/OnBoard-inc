@@ -51,15 +51,19 @@
 
 - [ ] **T0.3 Каркас бэкенда**
   Асинхронное FastAPI-приложение ([ADR-0010](adr/0010-async-backend.md)) с
-  JSON-логами и `request_id` (§9.3 [vision.md](vision.md)):
+  JSON-логами, `request_id` и журналом значимых операций (§9.3 [vision.md](vision.md)):
   `lifespan` создаёт `AsyncEngine` с явными параметрами пула и `httpx.AsyncClient`
   с таймаутами (§9.1 [vision.md](vision.md)), `statement_timeout` раздельно для
-  публичных и панельных маршрутов, `core/config.py` на pydantic-settings,
+  публичных и панельных маршрутов, `core/config.py` — класс `Settings` по §13.1
+  [conventions.md](conventions.md) с `SecretStr` и `extra="forbid"`,
   `GET /health` с проверкой БД через `AsyncSession`.
   *проверка:* `curl localhost:8000/health` → 200 `{"status":"ok","db":"ok"}`;
   async-тест на /health зелёный; в логах один раз создаётся движок, а не на каждый
   запрос; запрос `SELECT pg_sleep(3)` на публичном маршруте прерывается по
-  `statement_timeout`, а не висит.
+  `statement_timeout`, а не висит; старт пишет `app.started`, каждый ответ содержит
+  `X-Request-Id`, а в логе — одну строку JSON с этим же идентификатором; опечатка
+  в имени переменной `.env` валит старт; `repr(settings.jwt_secret)` не печатает
+  значение.
 
 - [ ] **T0.4 Alembic и первая миграция**
   Миграция 001 из §3.1 [data-model.md](data-model.md): `users`, `refresh_sessions`,
@@ -139,7 +143,9 @@
   протухший access → 401; refresh по cookie без тела выдаёт новый access; повторное
   использование ротированного refresh → 401 и сессия закрыта; logout делает cookie
   непригодной; пароль из блок-листа и пароль короче 12 символов → 422; пароль
-  в 100 символов с пробелами принимается; 11-я попытка логина с одного IP → 429
+  в 100 символов с пробелами принимается; в логах есть `user.login.failed` с причиной
+  и **без email**, `auth.refresh.reuse_detected` уровня ERROR при повторном
+  использовании токена; 11-я попытка логина с одного IP → 429
   с `Retry-After`; 6-я неудачная попытка по одному email → 429 даже с другого IP
   (§9.2 [vision.md](vision.md)).
 
