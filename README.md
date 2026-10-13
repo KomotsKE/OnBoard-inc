@@ -29,11 +29,14 @@ make up         # поднять стек целиком
 
 | Файл | Отвечает на вопрос |
 |---|---|
-| [docs/idea.md](docs/idea.md) | что и для кого делаем, границы MVP |
+| [docs/idea.md](docs/idea.md) | цели и задачи заказчика, границы MVP |
 | [docs/vision.md](docs/vision.md) | как устроена система: архитектура, модель данных, API |
 | [docs/adr/](docs/adr/) | почему принято именно это решение |
 | [docs/conventions.md](docs/conventions.md) | как писать код |
 | [docs/workflow.md](docs/workflow.md) | как ведётся разработка |
+| [docs/data-model.md](docs/data-model.md) | что храним и как устроена схема БД |
+| [docs/screens.md](docs/screens.md) | экраны панели и их контракт с API |
+| [docs/competitors.md](docs/competitors.md) | анализ аналогов и позиционирование |
 | [docs/tasklist.md](docs/tasklist.md) | где мы сейчас и что следующее |
 | [CLAUDE.md](CLAUDE.md) | правила проекта, подгружаются в каждую сессию |
 
