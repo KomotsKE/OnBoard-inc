@@ -50,3 +50,17 @@ publish-panel: ## зеркало panel/ во внешний репозитори
 
 publish-widget: ## зеркало widget/ во внешний репозиторий
 	$(call STUB,T0.10)
+
+hooks: ## установить git-хуки (pre-commit + commit-msg)
+	@if command -v pre-commit >/dev/null 2>&1; then \
+		pre-commit install --install-hooks; \
+	elif [ -x .venv/bin/pre-commit ]; then \
+		.venv/bin/pre-commit install --install-hooks; \
+	else \
+		echo "  pre-commit не найден. Один раз выполните:"; \
+		echo "    python3 -m venv .venv && .venv/bin/pip install pre-commit && make hooks"; \
+		exit 1; \
+	fi
+
+commits: ## проверить сообщения коммитов на Conventional Commits
+	@scripts/check-commit-messages.sh $(RANGE)

@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  commits:
+    name: Сообщения коммитов
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Conventional Commits
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            range="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+          else
+            range="${{ github.event.before }}..${{ github.sha }}"
+          fi
+          git rev-parse --quiet --verify "${range%%..*}" >/dev/null || range="HEAD~1..HEAD"
+          scripts/check-commit-messages.sh "$range"
+
+  hooks:
+    name: pre-commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pre-commit
+      - run: pre-commit run --all-files --show-diff-on-failure
+
+  backend:
+    name: Бэкенд — ruff и pytest
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: onboard_test
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+        ports: ["5432:5432"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Установить зависимости
+        if: hashFiles('backend/requirements.txt', 'backend/pyproject.toml') != ''
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; else pip install -e ".[dev]"; fi
+      - name: ruff
+        if: hashFiles('backend/**/*.py') != ''
+        run: ruff check backend && ruff format --check backend
+      - name: pytest
+        if: hashFiles('backend/tests/**/*.py') != ''
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/onboard_test
+        run: pytest -q
+
+  frontend:
+    name: Панель и виджет — типы, тесты, размер
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Панель
+        if: hashFiles('panel/package.json') != ''
+        working-directory: panel
+        run: |
+          npm ci
+          npx tsc --noEmit
+          npm test --if-present
+      - name: Виджет
+        if: hashFiles('widget/package.json') != ''
+        working-directory: widget
+        run: |
+          npm ci
+          npx tsc --noEmit
+          npm test --if-present
+      - name: Бюджет размера бандлов
+        if: hashFiles('widget/.size-limit.json', 'widget/package.json') != ''
+        working-directory: widget
+        run: npm run size --if-present
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Playwright
+        if: hashFiles('e2e/package.json') != ''
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npx playwright test
