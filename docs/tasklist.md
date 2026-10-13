@@ -47,11 +47,13 @@
 - [ ] **T0.3 Каркас бэкенда**
   Асинхронное FastAPI-приложение ([ADR-0010](adr/0010-async-backend.md)):
   `lifespan` создаёт `AsyncEngine` с явными параметрами пула и `httpx.AsyncClient`
-  с таймаутами (§12.1–12.2 [conventions.md](conventions.md)), `core/config.py`
-  на pydantic-settings, `GET /health` с проверкой БД через `AsyncSession`.
+  с таймаутами (§9.1 [vision.md](vision.md)), `statement_timeout` раздельно для
+  публичных и панельных маршрутов, `core/config.py` на pydantic-settings,
+  `GET /health` с проверкой БД через `AsyncSession`.
   *проверка:* `curl localhost:8000/health` → 200 `{"status":"ok","db":"ok"}`;
   async-тест на /health зелёный; в логах один раз создаётся движок, а не на каждый
-  запрос.
+  запрос; запрос `SELECT pg_sleep(3)` на публичном маршруте прерывается по
+  `statement_timeout`, а не висит.
 
 - [ ] **T0.4 Alembic и первая миграция**
   Миграция 001 из §3.1 [data-model.md](data-model.md): `users`, `refresh_sessions`,
@@ -131,7 +133,9 @@
   протухший access → 401; refresh по cookie без тела выдаёт новый access; повторное
   использование ротированного refresh → 401 и сессия закрыта; logout делает cookie
   непригодной; пароль из блок-листа и пароль короче 12 символов → 422; пароль
-  в 100 символов с пробелами принимается.
+  в 100 символов с пробелами принимается; 11-я попытка логина с одного IP → 429
+  с `Retry-After`; 6-я неудачная попытка по одному email → 429 даже с другого IP
+  (§9.2 [vision.md](vision.md)).
 
 - [ ] **T1.2 Проекты**
   CRUD включая `DELETE` (каскад), генерация `public_key`, `allowed_origins`, `theme`
@@ -173,8 +177,9 @@
 ## Этап 2 — виджет
 
 - [ ] **T2.1 Loader**
-  Чтение `data-key`/`data-api`, запрос конфига, ленивая загрузка `core.js` только при
-  наличии подходящего тура, `widget_ping`.
+  Чтение `data-key`/`data-api`, запрос конфига с `AbortController` (3 с, §9.1
+  [vision.md](vision.md)), ленивая загрузка `core.js` только при наличии подходящего
+  тура, `widget_ping`.
   *проверка:* e2e — на странице без тура `core.js` не запрашивается (проверяем по
   списку сетевых запросов); с туром — запрашивается один раз.
 
@@ -267,8 +272,9 @@
   Миграция 003 (§3.3 [data-model.md](data-model.md)) и `POST /public/events`: батч
   одним `INSERT ... ON CONFLICT` без предварительного `SELECT` (§12.7 conventions.md),
   валидация, проверка `Origin` против `allowed_origins`, идемпотентность по `event_id`,
-  обрезка URL до path, rate limit за интерфейсом `RateLimiter` (in-memory реализация),
-  всегда 204 при валидном ключе.
+  обрезка URL до path, лимиты по §9.2 [vision.md](vision.md) за интерфейсом
+  `RateLimiter` (in-memory реализация), 429 с `Retry-After` при превышении,
+  всегда 204 при валидном ключе и соблюдённом лимите.
   *проверка:* pytest — двойная отправка одного батча → одна строка в БД; чужой Origin
   → 403; битая схема события → 204 и событие отброшено (виджет не ретраит).
 
@@ -277,7 +283,8 @@
   localStorage; `device` определяется через `matchMedia`, User-Agent не разбирается
   (§7.1 [vision.md](vision.md)).
   *проверка:* e2e — закрытие вкладки посреди тура доставляет `tour_started` и
-  `step_viewed`; при недоступном API события уходят при следующей загрузке.
+  `step_viewed`; при недоступном API события уходят при следующей загрузке; на 429
+  отправка повторяется с экспоненциальной задержкой, события не теряются.
 
 - [ ] **T4.3 Агрегация**
   `GET /tours/{id}/analytics?range=7d|30d` — тоталы, воронка по шагам, drop-off,
