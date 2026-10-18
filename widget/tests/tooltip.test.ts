@@ -141,7 +141,7 @@ describe("узкий экран", () => {
 describe("подсказка в shadow root", () => {
   const LABELS = { next: "Далее", skip: "Пропустить", done: "Готово" };
 
-  function mount(handlers = { onNext: vi.fn(), onSkip: vi.fn() }) {
+  function mount(handlers = { onNext: vi.fn(), onBack: vi.fn(), onSkip: vi.fn() }) {
     const host = document.createElement("div");
     document.body.append(host);
     const root = host.attachShadow({ mode: "open" });
@@ -205,15 +205,27 @@ describe("подсказка в shadow root", () => {
   });
 
   it("кнопки зовут обработчики", () => {
-    const handlers = { onNext: vi.fn(), onSkip: vi.fn() };
+    const handlers = { onNext: vi.fn(), onBack: vi.fn(), onSkip: vi.fn() };
     const { root, tooltip, element } = mount(handlers);
     tooltip.show({ title: "", body: "Текст", placement: "auto" }, element, { index: 0, total: 2 });
 
     part(root, "next").click();
     part(root, "skip").click();
+    part(root, "back").click();
 
     expect(handlers.onNext).toHaveBeenCalledTimes(1);
     expect(handlers.onSkip).toHaveBeenCalledTimes(1);
+    expect(handlers.onBack).toHaveBeenCalledTimes(1);
+  });
+
+  it("на первом шаге «Назад» не показывается", () => {
+    const { root, tooltip, element } = mount();
+
+    tooltip.show({ title: "", body: "Текст", placement: "auto" }, element, { index: 0, total: 3 });
+    const first = part(root, "back").hidden;
+    tooltip.show({ title: "", body: "Текст", placement: "auto" }, element, { index: 1, total: 3 });
+
+    expect([first, part(root, "back").hidden]).toEqual([true, false]);
   });
 
   it("stop убирает подсказку", () => {

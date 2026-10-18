@@ -60,6 +60,18 @@
           <div id="delayed-slot"></div>
         </div>`,
     },
+    "/once": {
+      title: "Показ один раз",
+      html: `
+        <div class="card">
+          <h1>Показ один раз</h1>
+          <p>
+            Тур этой страницы помечен <code>show_once</code>: после прохождения или
+            пропуска он не должен появляться снова даже после перезагрузки.
+          </p>
+          <button type="button" data-testid="once-target">Цель однократного тура</button>
+        </div>`,
+    },
     "/settings": {
       title: "Настройки",
       html: `

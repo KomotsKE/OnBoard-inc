@@ -113,7 +113,7 @@ export function place(target: Rect, tip: Size, viewport: Size, preferred: Placem
 
 export type TooltipStep = { title: string; body: string; placement: Placement };
 export type TooltipLabels = { next: string; skip: string; done: string };
-export type TooltipHandlers = { onNext: () => void; onSkip: () => void };
+export type TooltipHandlers = { onNext: () => void; onBack: () => void; onSkip: () => void };
 
 export type Tooltip = {
   show: (step: TooltipStep, target: Element, state: { index: number; total: number }) => void;
@@ -156,6 +156,13 @@ export function createTooltip(
   dots.className = "tip__dots";
   dots.dataset.part = "dots";
 
+  const back = doc.createElement("button");
+  back.type = "button";
+  back.className = "tip__button tip__button--ghost";
+  back.dataset.part = "back";
+  back.textContent = "Назад";
+  back.addEventListener("click", () => handlers.onBack());
+
   const skip = doc.createElement("button");
   skip.type = "button";
   skip.className = "tip__button tip__button--ghost";
@@ -170,7 +177,7 @@ export function createTooltip(
 
   const footer = doc.createElement("div");
   footer.className = "tip__footer";
-  footer.append(dots, skip, next);
+  footer.append(dots, skip, back, next);
 
   tip.append(arrow, title, body, footer);
   root.append(tip);
@@ -224,6 +231,8 @@ export function createTooltip(
       title.textContent = step.title;
       body.textContent = step.body;
       skip.textContent = labels.skip;
+      // На первом шаге возвращаться некуда, и пустая кнопка только мешает.
+      back.hidden = state.index === 0;
       next.textContent = state.index + 1 >= state.total ? labels.done : labels.next;
       drawDots(state.index, state.total);
 

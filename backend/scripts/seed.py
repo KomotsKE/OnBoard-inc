@@ -45,6 +45,12 @@ TOUR_PATH = "/reports"
 DELAYED_PATH = "/delayed"
 DELAYED_STEP = ('[data-testid="export-button"]', "Экспорт", "Кнопка появляется не сразу.")
 
+# Третий тур — единственный с show_once: на нём проверяется, что пройденный
+# тур не возвращается после перезагрузки. У остальных show_once выключен,
+# иначе демо показалось бы один раз и исчезло.
+ONCE_PATH = "/once"
+ONCE_STEP = ('[data-testid="once-target"]', "Только один раз", "Больше вы меня не увидите.")
+
 STEPS = [
     ('[data-testid="filters-button"]', "Фильтры", "Отчёт настраивается здесь."),
     ('[data-testid="export-button"]', "Экспорт", "Кнопка появляется не сразу — так бывает."),
@@ -103,6 +109,7 @@ async def _create_tour(
     mode: str,
     value: str,
     steps: list[tuple[str, str, str]],
+    show_once: bool = False,
 ) -> tuple[Tour, list[Step]]:
     now = datetime.now(UTC)
     tour = Tour(
@@ -111,7 +118,7 @@ async def _create_tour(
         status="published",
         url_match_mode=mode,
         url_match_value=value,
-        show_once=False,  # Иначе демо-тур показался бы один раз и исчез.
+        show_once=show_once,
         published_at=now,
         updated_at=now,
     )
@@ -217,6 +224,15 @@ async def seed() -> None:
                 value=DELAYED_PATH,
                 steps=[DELAYED_STEP],
             )
+            once, _ = await _create_tour(
+                session,
+                stand,
+                name="Показ один раз",
+                mode="exact",
+                value=ONCE_PATH,
+                steps=[ONCE_STEP],
+                show_once=True,
+            )
             events = _create_events(stand, tour, steps)
             session.add_all(events)
     finally:
@@ -227,7 +243,8 @@ async def seed() -> None:
         f"  вход в панель:   {DEMO_EMAIL} / {DEMO_PASSWORD}\n"
         f"  проекты:         {stand.name} ({STAND_PUBLIC_KEY}), {empty.name}\n"
         f"  туры:            «{tour.name}» ({len(steps)} шага) на {TOUR_PATH},\n"
-        f"                   «{delayed.name}» (1 шаг) на {DELAYED_PATH}\n"
+        f"                   «{delayed.name}» (1 шаг) на {DELAYED_PATH},\n"
+        f"                   «{once.name}» (1 шаг, show_once) на {ONCE_PATH}\n"
         f"  событий:         {len(events)} в {TOTAL_RUNS} прогонах"
     )
 

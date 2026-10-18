@@ -12,8 +12,10 @@
 // Тип описан один раз — в загрузчике, который этот конфиг и получает. Импорт
 // только типов: в бандл ядра код загрузчика не попадает.
 import type { WidgetConfig } from "../loader/index";
+import { createEngine, type EngineTour, resumeIndex } from "./engine";
 import { createHost, type WidgetTheme } from "./host";
 import { createOverlay } from "./overlay";
+import { createProgressStore, openStorage } from "./progress";
 import { createResolver } from "./resolver";
 import { createTooltip, type Placement, type TooltipLabels } from "./tooltip";
 import { createWatcher } from "./watcher";
@@ -24,6 +26,7 @@ type Theme = WidgetConfig["project"]["theme"];
 
 type CoreApi = {
   version: string;
+  config?: { publicKey: string };
   boot?: WidgetConfig;
   start?: () => void;
   stop?: () => void;
@@ -71,9 +74,8 @@ export async function start(target: Window = window): Promise<void> {
   try {
     const api = globalApi(target);
     const boot = api?.boot;
-    const tour = boot?.tour;
-    const step = tour?.steps[0];
-    if (!boot || !tour || !step) {
+    const tour = boot?.tour as EngineTour | null | undefined;
+    if (!boot || !tour || tour.steps.length === 0) {
       console.debug("[OnBoard] ядро загружено без тура — показывать нечего");
       return;
     }
@@ -82,27 +84,64 @@ export async function start(target: Window = window): Promise<void> {
     stop();
 
     const doc = target.document;
+    const progress = createProgressStore(
+      api?.config?.publicKey ?? "unknown",
+      openStorage(target),
+    );
+    if (!progress.persistent) {
+      // Тур покажется ещё раз — деградация, а не поломка (§3.3 docs/idea.md).
+      // Код `storage_unavailable` уедет событием в T4.1.
+      console.debug("[OnBoard] localStorage недоступен: прогресс живёт до перезагрузки");
+    }
+
+    const from = resumeIndex(tour, progress.read(tour.id));
+    if (from === null) {
+      console.debug("[OnBoard] тур уже пройден и показывается один раз");
+      return;
+    }
+
     const theme = themeOf(boot.project.theme);
     const resolver = createResolver(doc);
     const host = createHost(doc, theme);
     const overlay = createOverlay(host.root, theme);
-    const tooltip = createTooltip(host.root, labelsOf(boot.project.theme), {
-      onSkip: () => stop(),
-      // Переходы между шагами — T2.5. Кнопка уже на месте, потому что от неё
-      // зависит раскладка подсказки, которую проверяет e2e.
-      onNext: () => console.debug("[OnBoard] переход к следующему шагу — T2.5"),
-    });
 
-    let current: Element | null = null;
+    // Три ссылки друг на друга: наблюдатель пересчитывает текущий шаг движка,
+    // кнопки подсказки ведут движок, движок показывает подсказку. Замыкания
+    // создаются раньше, чем вызываются, поэтому порядок объявлений безопасен.
     const watcher = createWatcher(doc, () => {
-      if (current) {
-        overlay.draw(current);
+      const target = engine.current();
+      if (target) {
+        overlay.draw(target);
         tooltip.reposition();
       }
     });
 
+    const tooltip = createTooltip(host.root, labelsOf(boot.project.theme), {
+      onNext: () => void engine.next(),
+      onBack: () => void engine.back(),
+      onSkip: () => engine.skip(),
+    });
+
+    const engine = createEngine(
+      { ...tour, steps: tour.steps.map((step) => ({ ...step, placement: placementOf(step.placement) })) },
+      {
+        resolver,
+        overlay,
+        tooltip,
+        watcher,
+        progress,
+        view: target,
+        onFinish: (reason) => {
+          // Тур закончился сам: убираем всё, что показывали.
+          console.debug("[OnBoard] тур завершён:", reason);
+          stop();
+        },
+      },
+    );
+
     active = {
       stop: () => {
+        engine.stop();
         watcher.stop();
         tooltip.stop();
         overlay.stop();
@@ -111,23 +150,7 @@ export async function start(target: Window = window): Promise<void> {
       },
     };
 
-    const resolution = await resolver.resolve(step.selector);
-    if (resolution.status === "found") {
-      current = resolution.element;
-      overlay.draw(current);
-      tooltip.show(
-        { title: step.title, body: step.body, placement: placementOf(step.placement) },
-        current,
-        { index: 0, total: tour.steps.length },
-      );
-      watcher.watch(current);
-      return;
-    }
-
-    // Событие `step_target_missing` с этой причиной отправит движок (T2.5, T4.1):
-    // сейчас отправлять некуда, а молча оставить затемнение без выреза нельзя.
-    console.debug("[OnBoard] цель первого шага не найдена:", resolution.reason);
-    stop();
+    await engine.start(from);
   } catch (error) {
     console.debug("[OnBoard] ядро остановлено", error);
     stop();
