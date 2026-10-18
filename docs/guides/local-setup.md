@@ -23,8 +23,8 @@ Python и Node нужны для инструментов разработки �
 make env
 
 # 2. Секреты для локальной работы — значения из шаблона нерабочие.
-python3 -c "import secrets; print('JWT_SECRET=' + secrets.token_urlsafe(48))"
-python3 -c "import secrets; print('EDITOR_TOKEN_SECRET=' + secrets.token_urlsafe(48))"
+python3 -c "import secrets; print('ONBOARD_JWT_SECRET=' + secrets.token_urlsafe(48))"
+python3 -c "import secrets; print('ONBOARD_EDITOR_TOKEN_SECRET=' + secrets.token_urlsafe(48))"
 # подставьте их в .env
 
 # 3. Стек
@@ -71,7 +71,7 @@ make           # список всех целей
 |---|---|---|
 | `postgres` | `localhost:5432` | T0.2 |
 | `testsite` | `localhost:8080` | T0.2 (заглушка; полный стенд — T0.8) |
-| `api` | `localhost:8000` | T0.3 |
+| `api` | `localhost:8000` | T0.3 ✓ |
 | `migrate` | одноразовый | T0.4 |
 | `panel` | `localhost:5173` | T0.6 |
 
@@ -93,10 +93,17 @@ make           # список всех целей
 неполон: сверьте его с `.env.example` — compose не подставляет значения по умолчанию
 за вас.
 
-**Приложение не стартует и пишет про отсутствующий секрет** (с T0.3). Так и задумано:
-дефолтных секретов в коде нет, потому что дефолтный `JWT_SECRET` на сервере — это
-токены, подписанные предсказуемым ключом (§13 [conventions.md](../conventions.md)).
+**Приложение не стартует и пишет про отсутствующий секрет.** Так и задумано:
+дефолтных секретов в коде нет, потому что дефолтный `ONBOARD_JWT_SECRET` на сервере —
+это токены, подписанные предсказуемым ключом (§13 [conventions.md](../conventions.md)).
 Сгенерируйте значения из шага 2.
+
+**Приложение не стартует и пишет `неизвестные переменные с префиксом ONBOARD_`.**
+В `.env` или в окружении есть имя, которого нет среди настроек, — почти всегда это
+опечатка. Сверьте имя с таблицей §13 conventions.md.
+
+**`curl localhost:8000/health` отвечает 503.** Значит API поднялся, а база недоступна:
+посмотрите `docker compose logs api` и состояние postgres в `docker compose ps`.
 
 **Нужно начать с чистой базы.** `docker compose down -v` удаляет том `pgdata`
 вместе со всеми локальными данными, затем `make up`.

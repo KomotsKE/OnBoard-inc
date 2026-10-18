@@ -41,10 +41,10 @@ seed: ## наполнить БД демо-данными
 	$(call STUB,T0.11)
 
 test: ## pytest + vitest + tsc --noEmit
-	$(call STUB,T0.5)
+	docker compose run --rm --no-deps api pytest
 
 lint: ## ruff + tsc
-	$(call STUB,T0.5)
+	docker compose run --rm --no-deps api sh -c "ruff check . && ruff format --check ."
 
 e2e: ## Playwright
 	$(call STUB,T2.1)

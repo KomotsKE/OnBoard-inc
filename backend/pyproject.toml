@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "onboard-backend"
+version = "0.1.0"
+description = "OnBoard — API платформы интерактивного онбординга"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115,<0.120",
+    "uvicorn>=0.32,<0.36",
+    "sqlalchemy>=2.0.36,<2.1",
+    "alembic>=1.14,<1.17",
+    "psycopg[binary]>=3.2,<3.3",
+    "pydantic-settings>=2.6,<2.12",
+    "pyjwt>=2.10,<2.12",
+    "argon2-cffi>=23.1,<26",
+    "python-multipart>=0.0.20,<0.1",
+    "httpx>=0.28,<0.29",
+    "anyio>=4.6,<5",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3,<9",
+    "pytest-asyncio>=0.24,<1.3",
+    "ruff>=0.9,<0.16",
+]
+
+[tool.setuptools]
+packages = ["app"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "ASYNC"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-q"
