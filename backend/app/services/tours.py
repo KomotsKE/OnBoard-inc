@@ -3,7 +3,8 @@
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, Text, func, literal, select
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -21,6 +22,27 @@ def _with_steps(statement: Select) -> Select:
     return statement.options(selectinload(Tour.steps))
 
 
+async def _ensure_database_accepts_regex(session: AsyncSession, url_match: UrlMatch) -> None:
+    """Проверка выражения той же машинкой, которая будет его применять.
+
+    Отбор тура выполняется оператором `~` в SQL (§6 docs/vision.md), а синтаксис
+    POSIX-выражений PostgreSQL не совпадает с Python: `(?P<name>…)`
+    компилируется в Python и падает в базе. Без этой проверки один такой тур
+    ронял бы публичный конфиг всего проекта — то есть виджет на всех страницах
+    клиента.
+
+    Запрос идёт в точке сохранения: ошибка оператора иначе оборвала бы всю
+    транзакцию запроса.
+    """
+    if url_match.mode != "regex":
+        return
+    try:
+        async with session.begin_nested():
+            await session.execute(select(literal("", Text).regexp_match(url_match.value)))
+    except DBAPIError as exc:
+        raise ValidationError("это регулярное выражение не поддерживается базой данных") from exc
+
+
 async def create(
     session: AsyncSession,
     project_id: uuid.UUID,
@@ -29,6 +51,7 @@ async def create(
     url_match: UrlMatch,
     show_once: bool,
 ) -> Tour:
+    await _ensure_database_accepts_regex(session, url_match)
     tour = Tour(
         project_id=project_id,
         name=name,
@@ -113,6 +136,7 @@ async def update(
     if name is not None:
         tour.name = name
     if url_match is not None:
+        await _ensure_database_accepts_regex(session, url_match)
         tour.url_match_mode = url_match.mode
         tour.url_match_value = url_match.value
     if show_once is not None:

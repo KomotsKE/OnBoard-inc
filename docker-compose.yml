@@ -50,12 +50,17 @@ services:
     environment:
       # Внутри compose хост базы — имя сервиса, а не localhost из .env.
       ONBOARD_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      # Манифест сборки виджета смонтирован отдельным каталогом (см. volumes).
+      ONBOARD_WIDGET_MANIFEST_PATH: /widget/manifest.json
     ports:
       - "${API_PORT:-8000}:8000"
     volumes:
       # Код смонтирован: правка видна после перезапуска контейнера, пересборка
       # нужна только при изменении зависимостей.
       - ./backend:/app
+      # Только для чтения: публичный конфиг берёт отсюда имя файла ядра с хэшем,
+      # а писать в сборку виджета API не должен.
+      - ./widget/dist:/widget:ro
     depends_on:
       postgres:
         condition: service_healthy

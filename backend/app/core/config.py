@@ -40,6 +40,10 @@ class Settings(BaseSettings):
     # Где отдаются бандлы виджета. В разработке это nginx со стендом, в проде —
     # API или CDN; сниппет у клиента ссылается именно сюда.
     widget_base_url: AnyHttpUrl
+    # Манифест сборки виджета: отсюда берётся имя файла ядра с хэшем (ADR-0009).
+    # Значение по умолчанию верно при запуске из каталога backend/; в compose
+    # каталог со сборкой смонтирован в контейнер и путь переопределён.
+    widget_manifest_path: Path = Path("../widget/dist/manifest.json")
 
     # Пул и таймауты — §9.1 docs/vision.md.
     db_pool_size: int = 10

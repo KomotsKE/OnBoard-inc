@@ -23,6 +23,19 @@ class UrlMatch(BaseModel):
     value: Annotated[str, Field(min_length=1, max_length=MATCH_VALUE_MAX)] = "/"
 
     @model_validator(mode="after")
+    def strip_trailing_slash(self) -> "UrlMatch":
+        """`/pricing/` и `/pricing` — одна страница (§6 docs/vision.md).
+
+        Адрес страницы нормализуется при сравнении, поэтому условие нужно
+        привести к тому же виду: иначе владелец вводит `/pricing/`, режим
+        `exact` не совпадает ни с чем и тур молча не показывается. Для
+        `contains` и `regex` слэш значим и остаётся как есть.
+        """
+        if self.mode in ("exact", "prefix") and len(self.value) > 1:
+            self.value = self.value.rstrip("/") or self.value
+        return self
+
+    @model_validator(mode="after")
     def check_regex(self) -> "UrlMatch":
         if self.mode != "regex":
             return self

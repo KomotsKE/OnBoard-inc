@@ -446,6 +446,14 @@ cron-контейнер из §4.5, не планировщик задач.
 `onboard.v1.<public_key>.visitor`. Без этого два наших клиента на поддоменах одного
 домена делили бы один идентификатор посетителя и портили друг другу аналитику.
 
+**Отбор тура выполняется в SQL, а не в Python.** Режим `regex` — это выражение,
+которое написал владелец сайта. В Python катастрофический бэктрекинг заблокировал бы
+event loop без всякого предела: таймаута у модуля `re` нет. В PostgreSQL то же
+выражение обрывает `statement_timeout` публичных маршрутов (2 с), поэтому сравнение
+отдано базе — `starts_with`, `strpos` и оператор `~`. Обратная сторона: синтаксис
+POSIX-выражений PostgreSQL не совпадает с Python, поэтому выражение при сохранении
+тура проверяется той же машинкой, которая будет его применять.
+
 **Условие показа тура сравнивается с `pathname + search`.** Не с полным URL:
 `origin` уже проверен через `allowed_origins`, а `hash` в SPA меняется произвольно и
 ломал бы условие. Перед сравнением убирается завершающий слэш (`/pricing/` и
@@ -580,15 +588,24 @@ Drop-off шага N    = 1 − Воронка(N+1) / Воронка(N)
 ### 8.1 Публичный API (виджет, CORS, авторизация по public key)
 
 ```
-GET  /v1/public/config?key=pk_…&url=<href>
-     → 200 { core_url: "/static/core.<hash>.js",
+GET  /v1/public/config?key=pk_…&url=/reports?plan=pro
+     → 200 { core_url: "https://…/core.<hash>.js",
              project: {theme}, tour: {id, name, show_once, steps:[…]} | null }
-     Один запрос — всё, что нужно для показа. ETag, max-age=60.
-     core_url — точный адрес ядра с хэшем сборки (ADR-0009).
+     Один запрос — всё, что нужно для показа. ETag, max-age=60; If-None-Match
+     даёт 304. Кэш экономит трафик, а не запросы к базе: чтобы узнать текущий
+     ETag, тур всё равно нужно отобрать (выносится на CDN — экономит и их).
+     core_url — точный адрес ядра с хэшем сборки, имя файла берётся из
+     manifest.json сборки виджета (ADR-0009). Нет манифеста → 503: это отказ
+     развёртки, и он должен быть виден в логах, а не выглядеть как «нет тура».
+     url — pathname + search, а не полный href: hash в сравнении не участвует,
+     и передавать его нашему API незачем. Абсолютный адрес тоже принимается.
      Origin проверяется против allowed_origins; пустой список = ни один домен
      не разрешён (fail closed): виджет молчит, в панели горит подсказка
      «добавьте домен». Fail open был бы дырой — чужой сайт смог бы
      воспользоваться ключом.
+     Успешный ответ несёт Access-Control-Allow-Origin с проверенным доменом
+     (не `*`) и Vary: Origin. На ответах с ошибкой заголовков CORS нет: виджет
+     одинаково молчит при любом отказе и тела ошибки не читает.
 
 POST /v1/public/events          { key, events: [ {event_id, type, …} ] } → 204
 
@@ -772,6 +789,7 @@ GET    /v1/tours/{id}/analytics?range=7d|30d
 | `editor_session.issued` | INFO | `tour_id`, `mode` (`edit` / `preview`) |
 | `editor_session.rejected` | WARNING | причина (`expired` / `foreign_tour`) |
 | `widget.first_seen` | INFO | `project_id` — первое подключение виджета на проекте |
+| `widget.config.forbidden_origin` | WARNING | `project_id` — домена нет в `allowed_origins`; в панели это та самая подсказка «добавьте домен» |
 | `events.batch_accepted` | INFO | `project_id`, принято, отброшено дублей |
 | `events.batch_rejected` | WARNING | `project_id`, причина (`forbidden_origin` / `rate_limited`) |
 | `rate_limit.exceeded` | WARNING | бакет, `project_id` или `user_id` — **без IP** |

@@ -22,6 +22,7 @@ from app.api.v1.panel import auth as auth_routes
 from app.api.v1.panel import projects as project_routes
 from app.api.v1.panel import steps as step_routes
 from app.api.v1.panel import tours as tour_routes
+from app.api.v1.public import config as public_config_routes
 from app.core.config import get_settings
 from app.core.errors import (
     AppError,
@@ -32,6 +33,7 @@ from app.core.errors import (
 )
 from app.core.logging import configure_logging, log_event, set_request_id
 from app.core.rate_limit import InMemoryRateLimiter
+from app.core.widget_manifest import WidgetManifest
 from app.db.session import create_engine, create_sessionmaker
 
 REQUEST_ID_HEADER = b"x-request-id"
@@ -62,6 +64,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # Счётчики в памяти процесса корректны при одном воркере — это записанное
     # ограничение MVP (§4.5 docs/vision.md), подмена на Redis не меняет вызовы.
     app.state.rate_limiter = InMemoryRateLimiter()
+    # Манифест читается лениво и перечитывается по времени модификации: виджет
+    # собирается отдельным контейнером, и перезапуск API ради нового хэша ядра
+    # означал бы простой (ADR-0009).
+    app.state.widget_manifest = WidgetManifest(settings.widget_manifest_path)
 
     log_event(
         "app.started",
@@ -134,6 +140,7 @@ app.include_router(auth_routes.me_router)
 app.include_router(project_routes.router)
 app.include_router(tour_routes.router)
 app.include_router(step_routes.router)
+app.include_router(public_config_routes.router)
 
 
 @app.get("/health")

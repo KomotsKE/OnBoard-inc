@@ -465,6 +465,8 @@ SQL-запросов: он фиксирует константу, а не «ск
 | `ONBOARD_EDITOR_TOKEN_SECRET` | подпись токенов редактора (§9 data-model.md) | приложение не стартует |
 | `ONBOARD_PUBLIC_API_URL` | адрес API, который подставляется в сниппет (`data-api`) | приложение не стартует |
 | `ONBOARD_PANEL_ORIGIN` | origin панели для CORS приватного контура | приложение не стартует |
+| `ONBOARD_WIDGET_BASE_URL` | откуда отдаются бандлы виджета; попадает в `core_url` и в сниппет | приложение не стартует |
+| `ONBOARD_WIDGET_MANIFEST_PATH` | `manifest.json` сборки виджета: имя файла ядра с хэшем | `../widget/dist/manifest.json` (в compose каталог смонтирован, путь переопределён) |
 | `ONBOARD_LOG_LEVEL` | уровень логирования | `INFO` |
 | `ONBOARD_ENV` | `dev` / `prod`: влияет на флаг `Secure` у cookie и на подробность ошибок | `dev` |
 
