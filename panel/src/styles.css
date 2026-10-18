@@ -1,0 +1,48 @@
+/* Токены оформления. Имена переменных подсказки совпадают с виджетом:
+   превью в панели обязано выглядеть ровно так же, как подсказка на сайте
+   клиента (§4.6 docs/vision.md). Контраст проверен по WCAG 2.2. */
+:root {
+  --onboard-primary: #2563eb; /* белый текст на нём — 5,17 : 1 */
+  --onboard-text: #0f172a; /* на белом — 17,85 : 1 */
+  --onboard-text-muted: #475569; /* на белом — 8,06 : 1 */
+  --onboard-backdrop: rgb(0 0 0 / 55%);
+  --onboard-radius: 8px;
+  --onboard-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --panel-border: #e2e8f0;
+  --panel-bg: #ffffff;
+  --panel-space: 16px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--onboard-font);
+  color: var(--onboard-text);
+  background: var(--panel-bg);
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: var(--panel-space);
+  padding: var(--panel-space);
+  border-bottom: 1px solid var(--panel-border);
+}
+
+main {
+  padding: calc(var(--panel-space) * 2) var(--panel-space);
+  max-width: 960px;
+}
+
+a {
+  color: var(--onboard-primary);
+}
+
+p {
+  color: var(--onboard-text-muted);
+  line-height: 1.5;
+}

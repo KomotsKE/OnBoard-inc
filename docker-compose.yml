@@ -69,6 +69,23 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  panel:
+    build: ./panel
+    environment:
+      # Прокси vite ходит к API по имени сервиса внутри сети compose.
+      VITE_API_TARGET: http://api:8000
+    ports:
+      - "${PANEL_PORT:-5173}:5173"
+    volumes:
+      # Код смонтирован для горячей перезагрузки; node_modules остаются
+      # внутри контейнера, иначе хостовые модули перетрут собранные под alpine.
+      - ./panel:/app
+      - panel_node_modules:/app/node_modules
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
   testsite:
     # Непривилегированный образ: слушает 8080 и работает не от root.
     image: nginxinc/nginx-unprivileged:1.27-alpine
@@ -87,3 +104,4 @@ services:
 
 volumes:
   pgdata:
+  panel_node_modules:
