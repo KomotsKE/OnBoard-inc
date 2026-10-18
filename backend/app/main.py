@@ -14,11 +14,21 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from sqlalchemy import text
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.api.v1.panel import auth as auth_routes
 from app.core.config import get_settings
-from app.core.errors import AppError, ServiceUnavailableError, app_error_handler
+from app.core.errors import (
+    AppError,
+    ServiceUnavailableError,
+    app_error_handler,
+    http_exception_handler,
+    validation_exception_handler,
+)
 from app.core.logging import configure_logging, log_event, set_request_id
+from app.core.rate_limit import InMemoryRateLimiter
 from app.db.session import create_engine, create_sessionmaker
 
 REQUEST_ID_HEADER = b"x-request-id"
@@ -46,6 +56,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.settings = settings
     app.state.engine = engine
     app.state.sessionmaker = create_sessionmaker(engine)
+    # Счётчики в памяти процесса корректны при одном воркере — это записанное
+    # ограничение MVP (§4.5 docs/vision.md), подмена на Redis не меняет вызовы.
+    app.state.rate_limiter = InMemoryRateLimiter()
 
     log_event(
         "app.started",
@@ -108,6 +121,13 @@ class RequestContextMiddleware:
 app = FastAPI(title="OnBoard API", lifespan=lifespan)
 app.add_middleware(RequestContextMiddleware)
 app.add_exception_handler(AppError, app_error_handler)
+# Ошибки самого фреймворка тоже обязаны быть в формате RFC 9457: 404 на
+# неизвестный маршрут, 405 и ошибки валидации схем приходят мимо AppError.
+app.add_exception_handler(StarletteHTTPException, http_exception_handler)
+app.add_exception_handler(RequestValidationError, validation_exception_handler)
+
+app.include_router(auth_routes.router)
+app.include_router(auth_routes.me_router)
 
 
 @app.get("/health")

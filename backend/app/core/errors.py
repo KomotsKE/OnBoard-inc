@@ -5,7 +5,9 @@
 """
 
 from fastapi import Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 PROBLEM_MEDIA_TYPE = "application/problem+json"
 
@@ -28,6 +30,12 @@ class NotFoundError(AppError):
     status = 404
     type = "/errors/not-found"
     title = "Объект не найден"
+
+
+class UnauthorizedError(AppError):
+    status = 401
+    type = "/errors/unauthorized"
+    title = "Требуется аутентификация"
 
 
 class ConflictError(AppError):
@@ -89,3 +97,30 @@ def problem_response(error: AppError) -> JSONResponse:
 async def app_error_handler(_: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, AppError)
     return problem_response(exc)
+
+
+async def http_exception_handler(_: Request, exc: Exception) -> JSONResponse:
+    """404, 405 и прочие ответы самого фреймворка — в том же формате."""
+    assert isinstance(exc, StarletteHTTPException)
+    titles = {
+        401: "Требуется аутентификация",
+        403: "Доступ запрещён",
+        404: "Объект не найден",
+        405: "Метод не поддерживается",
+    }
+    error = AppError(exc.detail if isinstance(exc.detail, str) else None)
+    error.status = exc.status_code
+    error.type = f"/errors/http-{exc.status_code}"
+    error.title = titles.get(exc.status_code, "Ошибка запроса")
+    return problem_response(error)
+
+
+async def validation_exception_handler(_: Request, exc: Exception) -> JSONResponse:
+    """Ошибки схем Pydantic. Значения полей в ответ не попадают: в теле запроса
+    бывают пароли, и они не должны вернуться клиенту и попасть в логи."""
+    assert isinstance(exc, RequestValidationError)
+    fields = sorted(
+        {".".join(str(part) for part in err["loc"][1:]) or "body" for err in exc.errors()}
+    )
+    error = ValidationError("проверьте поля: " + ", ".join(fields), fields=fields)
+    return problem_response(error)

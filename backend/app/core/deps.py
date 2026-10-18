@@ -2,6 +2,7 @@
 вместе с первым приватным ресурсом в T1.2, а не дописывается потом.
 """
 
+import uuid
 from collections.abc import AsyncIterator
 from typing import Annotated
 
@@ -9,7 +10,10 @@ from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
+from app.core.errors import UnauthorizedError
+from app.core.security import read_access_token
 from app.db.session import open_session
+from app.models import User
 
 
 def settings_dep() -> Settings:
@@ -39,3 +43,29 @@ async def panel_session(request: Request) -> AsyncIterator[AsyncSession]:
 PublicSession = Annotated[AsyncSession, Depends(public_session)]
 PanelSession = Annotated[AsyncSession, Depends(panel_session)]
 SettingsDep = Annotated[Settings, Depends(settings_dep)]
+
+
+async def current_user(request: Request, session: PanelSession) -> User:
+    """Владелец из access-токена.
+
+    Токен приходит в заголовке Authorization: access-токен живёт в памяти
+    панели и в cookie не хранится (ADR-0008).
+    """
+    header = request.headers.get("Authorization", "")
+    scheme, _, raw = header.partition(" ")
+    if scheme.lower() != "bearer" or not raw:
+        raise UnauthorizedError("нет access-токена")
+
+    subject = read_access_token(request.app.state.settings, raw.strip())
+    if subject is None:
+        raise UnauthorizedError("access-токен недействителен")
+
+    try:
+        user_id = uuid.UUID(subject)
+    except ValueError as exc:
+        raise UnauthorizedError("access-токен недействителен") from exc
+
+    user = await session.get(User, user_id)
+    if user is None:
+        raise UnauthorizedError("access-токен недействителен")
+    return user
