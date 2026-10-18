@@ -94,6 +94,32 @@ test("окно следует за целью при прокрутке", async 
     .toBe((await boxOf(page, EXPORT)).y - 4);
 });
 
+/**
+ * Пиксельные проверки нужны там, где атрибуты ничего не доказывают: если бы
+ * ссылка `url(#onboard-hole)` не разрешилась внутри shadow root, маска не
+ * применилась бы, оверлей стал бы глухим прямоугольником — и все проверки
+ * геометрии выше всё равно прошли бы.
+ *
+ * Снимки сравниваются побайтно с тем же участком после `OnBoard.stop()`:
+ * эталонных картинок в репозитории нет, сравнивается страница сама с собой.
+ */
+test("вырез действительно прозрачный, а затемнение действительно затемняет", async ({ page }) => {
+  await overlayStarted(page, "/reports");
+  const target = await boxOf(page, FILTERS);
+  const dimmed = await boxOf(page, ".rival-bubble");
+
+  const targetWithOverlay = await page.screenshot({ clip: target });
+  const rivalWithOverlay = await page.screenshot({ clip: dimmed });
+  await page.evaluate(() => {
+    (window as unknown as { OnBoard: { stop: () => void } }).OnBoard.stop();
+  });
+
+  // Внутри выреза страница выглядит ровно так же, как без виджета.
+  expect(targetWithOverlay.equals(await page.screenshot({ clip: target }))).toBe(true);
+  // А чужой виджет с z-index 2147483000 затемнение всё-таки накрывает.
+  expect(rivalWithOverlay.equals(await page.screenshot({ clip: dimmed }))).toBe(false);
+});
+
 test("DOM стенда не меняется", async ({ page }) => {
   await overlayStarted(page, "/reports");
 
