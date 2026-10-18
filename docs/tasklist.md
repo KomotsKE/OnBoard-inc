@@ -192,7 +192,7 @@
 
 ## Этап 2 — виджет
 
-- [ ] **T2.1 Loader**
+- [→] **T2.1 Loader**
   Чтение `data-key`/`data-api`, защита от повторной инициализации по `window.OnBoard`,
   запрос конфига с `AbortController` (3 с, §9.1 [vision.md](vision.md)), ленивая
   загрузка `core.js` только при наличии подходящего тура, `widget_ping`.

@@ -41,6 +41,17 @@ repos:
           - chore
           - revert
 
+  # План работ — единственный источник правды о том, где мы находимся,
+  # и новая сессия начинает с него. Рассогласование дороже, чем кажется.
+  - repo: local
+    hooks:
+      - id: tasklist
+        name: план работ согласован
+        entry: python3 scripts/check-tasklist.py
+        language: system
+        files: ^docs/tasklist\.md$
+        pass_filenames: false
+
   # Python: линтер и форматтер бэкенда
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Версия совпадает с backend/pyproject.toml: иначе хук и `make lint`
