@@ -32,10 +32,11 @@ logs: ## логи стека
 	docker compose logs -f --tail=100
 
 migrate: ## применить миграции
-	$(call STUB,T0.4)
+	docker compose run --rm migrate
 
 revision: ## создать миграцию: make revision m="описание"
-	$(call STUB,T0.4)
+	@test -n "$(m)" || (echo '  укажите описание: make revision m="добавить туры"'; exit 1)
+	docker compose run --rm --no-deps migrate alembic revision -m "$(m)"
 
 seed: ## наполнить БД демо-данными
 	$(call STUB,T0.11)

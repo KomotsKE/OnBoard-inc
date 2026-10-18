@@ -28,9 +28,12 @@ alembic/           миграции
 Бэкенд поднимается вместе со стеком из корня репозитория:
 
 ```bash
-make up                       # postgres, api, стенд
+make up                       # postgres, миграции, api, стенд
 curl localhost:8000/health    # {"status":"ok","db":"ok"}
 ```
+
+Миграции применяет одноразовый сервис `migrate`, от успешного завершения которого
+зависит `api` — подробности в [guides/migrations.md](../docs/guides/migrations.md).
 
 Код смонтирован в контейнер, поэтому правка видна после
 `docker compose restart api`. Пересборка образа нужна только при изменении

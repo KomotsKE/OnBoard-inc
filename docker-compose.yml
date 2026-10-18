@@ -29,6 +29,21 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  migrate:
+    # Одноразовый сервис: применяет миграции и завершается. api ждёт его
+    # успешного кода возврата, иначе стартовал бы на несуществующей схеме.
+    build: ./backend
+    env_file: .env
+    environment:
+      ONBOARD_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+
   api:
     build: ./backend
     env_file: .env
@@ -44,6 +59,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request as u; u.urlopen('http://127.0.0.1:8000/health', timeout=3)\" || exit 1"]
       interval: 5s
