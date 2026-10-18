@@ -1,26 +1,71 @@
 <!doctype html>
 <html lang="ru">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Стенд OnBoard</title>
-<style>
-  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #0F172A; }
-  main { max-width: 640px; margin: 0 auto; padding: 48px 16px; }
-  h1 { font-size: 24px; margin: 0 0 12px; }
-  p { font-size: 15px; line-height: 1.6; color: #334155; }
-  code { background: #F1F5F9; padding: 2px 5px; border-radius: 4px; font-size: 13px; }
-</style>
-</head>
-<body>
-<main>
-  <h1>Стенд для проверки виджета</h1>
-  <p>
-    Заглушка из задачи T0.2: подтверждает, что контейнер со стендом поднимается и
-    отдаёт статику. Настоящая страница с враждебным CSS, sticky-хедером, модалкой,
-    динамически появляющимся элементом и SPA-навигацией появится в задаче T0.8 —
-    см. <code>docs/tasklist.md</code>.
-  </p>
-</main>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Стенд OnBoard</title>
+    <link rel="stylesheet" href="/styles/hostile.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <strong data-testid="brand">Отчётница</strong>
+      <nav class="site-nav">
+        <!-- Навигация без перезагрузки: меняет URL через History API (T2.7). -->
+        <a href="/reports" data-route data-testid="nav-reports">Отчёты</a>
+        <a href="/dashboard" data-route data-testid="nav-dashboard">Дашборд</a>
+        <a href="/settings" data-route>Настройки</a>
+      </nav>
+      <button type="button" id="filters" data-testid="filters-button">Фильтры</button>
+    </header>
+
+    <div class="layout">
+      <aside>
+        <div class="card">
+          <h2>Разделы</h2>
+          <p class="muted">Боковое меню — часть вёрстки, подсказки к нему тоже привязывают.</p>
+        </div>
+        <div class="card scrollbox" data-testid="scrollbox">
+          <p>Элемент внутри прокручиваемого блока:</p>
+          <button type="button" class="css-1q2w3e" data-testid="scrolled-target">
+            Цель в прокрутке
+          </button>
+          <p class="muted">
+            Ниже текст, чтобы блок действительно прокручивался и подсветка пересчитывала
+            положение.
+          </p>
+          <p class="muted">Строка один. Строка два. Строка три. Строка четыре.</p>
+          <p class="muted">Строка пять. Строка шесть. Строка семь. Строка восемь.</p>
+        </div>
+      </aside>
+
+      <main id="view">
+        <!-- Содержимое подставляет app.js в зависимости от маршрута. -->
+      </main>
+    </div>
+
+    <div class="rival-bubble" aria-hidden="true">Чужой виджет, z-index 2147483000</div>
+
+    <div class="modal-backdrop" id="modal" hidden>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <h2 id="modal-title">Модальное окно сайта</h2>
+        <p class="muted">
+          Подсказка к элементу под модалкой должна либо остаться читаемой, либо не
+          показываться — но не ломать окно.
+        </p>
+        <button type="button" id="modal-close" data-testid="modal-close">Закрыть</button>
+      </div>
+    </div>
+
+    <script src="/app.js"></script>
+    <!--
+      Тег виджета ровно в том виде, в котором его вставляет клиент.
+      Ключ локальный: проект со таким public_key создаётся командой make seed (T0.11).
+    -->
+    <script
+      src="/widget/loader.js"
+      data-key="pk_00000000000000000000000000000001"
+      data-api="http://localhost:8000"
+      async
+    ></script>
+  </body>
 </html>

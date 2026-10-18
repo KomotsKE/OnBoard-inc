@@ -1,0 +1,164 @@
+/*
+ * Намеренно враждебный CSS. Каждое правило повторяет то, что встречается на
+ * реальных сайтах — если виджет корректен здесь, он корректен почти везде.
+ *
+ * Источники приёмов:
+ *  — tailwind preflight: сброс полей и box-sizing у всего, сброс кнопок;
+ *  — bootstrap reboot: межстрочный интервал и шрифт на всём документе;
+ *  — живые сайты: !important на типографике, свои stacking context,
+ *    конкурирующий виджет с максимальным z-index.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Типографика через !important: самый частый способ случайно переопределить
+   чужой интерфейс. Подсказка в Shadow DOM этого не чувствует. */
+* {
+  font-family: Georgia, "Times New Roman", serif !important;
+  letter-spacing: 0.01em !important;
+}
+
+html {
+  line-height: 1.15;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #2b2b2b;
+  background: #fbfaf7;
+}
+
+/* Полный сброс кнопок и полей: наши кнопки должны выжить за счёт изоляции,
+   а не за счёт собственных !important. */
+button,
+input,
+select,
+textarea {
+  all: unset;
+  cursor: pointer;
+}
+
+button {
+  padding: 8px 14px;
+  border: 1px solid #b9b4a8;
+  border-radius: 2px;
+  background: #efece4;
+}
+
+svg {
+  display: block;
+}
+
+a {
+  color: #7a4b16;
+  text-decoration: underline;
+}
+
+/* Sticky-хедер: ломается, если виджет поднимает элементы через z-index. */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 12px 20px;
+  background: #fbfaf7;
+  border-bottom: 1px solid #ddd8cc;
+}
+
+.site-nav {
+  display: flex;
+  gap: 14px;
+  margin-left: auto;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 24px;
+  padding: 24px 20px 80px;
+  max-width: 1100px;
+}
+
+/* Контейнер с трансформацией создаёт containing block: position: fixed внутри
+   него ведёт себя иначе. Поэтому хост виджета монтируется в body (ADR-0002). */
+.transformed {
+  transform: translateZ(0);
+  padding: 16px;
+  border: 1px dashed #c9c3b5;
+  border-radius: 2px;
+}
+
+.scrollbox {
+  max-height: 160px;
+  overflow: auto;
+  border: 1px solid #ddd8cc;
+  padding: 12px;
+}
+
+.card {
+  padding: 16px;
+  border: 1px solid #ddd8cc;
+  background: #fff;
+  margin-bottom: 14px;
+}
+
+/* Имитация имён, которые генерируют CSS-модули и CSS-in-JS: генератор
+   селекторов обязан их отбрасывать (§5 docs/vision.md). */
+.css-1q2w3e,
+._btn_a1b2c {
+  display: inline-block;
+}
+
+/* Конкурирующий виджет с максимальным z-index — наш оверлей должен оставаться
+   поверх содержимого страницы и не воевать с ним за порядок наложения. */
+.rival-bubble {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 2147483000;
+  padding: 10px 14px;
+  border-radius: 2px;
+  background: #2b2b2b;
+  color: #fbfaf7;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 45%);
+}
+
+.modal {
+  width: min(420px, calc(100vw - 32px));
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #b9b4a8;
+}
+
+.dark-section {
+  padding: 20px;
+  background: #15181d;
+  color: #e9edf2;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.muted {
+  color: #6b6760;
+  font-size: 13px;
+}

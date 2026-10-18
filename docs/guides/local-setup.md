@@ -70,7 +70,7 @@ make           # список всех целей
 | Сервис | Адрес | Появился в |
 |---|---|---|
 | `postgres` | `localhost:5432` | T0.2 |
-| `testsite` | `localhost:8080` | T0.2 (заглушка; полный стенд — T0.8) |
+| `testsite` | `localhost:8080` | T0.2, полный стенд — T0.8 ✓ |
 | `api` | `localhost:8000` | T0.3 ✓ |
 | `migrate` | одноразовый | T0.4 ✓ |
 | `panel` | `localhost:5173` | T0.6 ✓ |
