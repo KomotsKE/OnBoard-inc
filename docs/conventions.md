@@ -22,6 +22,7 @@ backend/
     schemas/            Pydantic-схемы запросов и ответов
     services/           бизнес-логика, не зависящая от FastAPI
   alembic/              миграции
+  scripts/              инструменты разработчика (seed), в прод-образ не попадают
   tests/                тесты, зеркалят структуру app/
 panel/
   src/api/              клиент API и типы ответов

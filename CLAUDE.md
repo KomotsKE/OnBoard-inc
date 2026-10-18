@@ -71,6 +71,7 @@ make hooks                           установить git-хуки (одно
 make commits                         проверить сообщения коммитов
 make up / make down / make logs      docker-compose
 make migrate / make revision m="…"   alembic
+make seed                            демо-данные для локальной работы
 make test                            pytest + vitest + tsc --noEmit
 make e2e                             Playwright
 make lint                            ruff + tsc

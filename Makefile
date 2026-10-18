@@ -39,7 +39,7 @@ revision: ## создать миграцию: make revision m="описание"
 	docker compose run --rm --no-deps migrate alembic revision -m "$(m)"
 
 seed: ## наполнить БД демо-данными
-	$(call STUB,T0.11)
+	docker compose run --rm api python -m scripts.seed
 
 test: ## pytest + vitest панели и виджета
 	docker compose run --rm --no-deps api pytest
