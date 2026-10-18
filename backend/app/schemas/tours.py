@@ -3,7 +3,7 @@
 import re
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import UUID4, BaseModel, Field, model_validator
 
 NAME_MAX = 200
 # Длина регулярного выражения ограничена отдельно: это простая защита от
@@ -42,6 +42,44 @@ class StepRead(BaseModel):
     title: str
     body: str
     placement: Placement
+
+
+# Продуктовые лимиты шага — §5 docs/data-model.md.
+STEPS_PER_TOUR = 20
+TITLE_MAX = 80
+BODY_MAX = 500
+SELECTOR_MAX = 500
+
+
+class StepCreate(BaseModel):
+    selector: Annotated[str, Field(min_length=1, max_length=SELECTOR_MAX)]
+    body: Annotated[str, Field(min_length=1, max_length=BODY_MAX)]
+    title: Annotated[str, Field(max_length=TITLE_MAX)] = ""
+    placement: Placement = "auto"
+
+
+class StepUpdate(BaseModel):
+    selector: Annotated[str, Field(min_length=1, max_length=SELECTOR_MAX)] | None = None
+    body: Annotated[str, Field(min_length=1, max_length=BODY_MAX)] | None = None
+    title: Annotated[str, Field(max_length=TITLE_MAX)] | None = None
+    placement: Placement | None = None
+
+
+class StepsOrder(BaseModel):
+    """Полный новый порядок: передаётся весь набор шагов тура, а не сдвиг
+    одного. Частичный порядок пришлось бы достраивать на сервере, и два
+    одновременных перетаскивания давали бы разный результат."""
+
+    step_ids: Annotated[list[UUID4], Field(min_length=1, max_length=STEPS_PER_TOUR)]
+
+
+class StepDeleted(BaseModel):
+    """Удаление последнего шага снимает тур с публикации, поэтому ответ
+    сообщает новый статус — панель показывает это явно (§8.2 docs/vision.md)."""
+
+    tour_id: str
+    tour_status: Status
+    steps_count: int
 
 
 class TourCreate(BaseModel):
