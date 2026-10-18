@@ -653,7 +653,7 @@ GET    /v1/tours/{id}/analytics?range=7d|30d
 
 | Категория | Требование | Как проверяем |
 |---|---|---|
-| Размер | `loader.js` ≤ 5 КБ gzip, `core.js` ≤ 30 КБ gzip, `editor.js` ≤ 20 КБ gzip | `size-limit` в CI, падает при превышении |
+| Размер | `loader.js` ≤ 5 КБ gzip, `core.js` ≤ 30 КБ gzip (ориентир 25), `editor.js` ≤ 20 КБ gzip | `make size` — своя проверка на `zlib`, код выхода 1 при превышении; в CI тот же вызов |
 | Скорость | загрузка `async`, не блокирует рендер; `core.js` не грузится, если тура нет | Lighthouse на тестовом сайте: дельта TBT < 50 мс |
 | Изоляция стилей | весь UI в Shadow DOM, `all: initial` на хосте, ни одного стиля в документ клиента | тестовый стенд с агрессивным CSS (`* { box-sizing… }`, bootstrap, tailwind preflight) |
 | Изоляция JS | ровно один глобал `window.OnBoard`, никаких правок прототипов | автотест на снимок `window` до/после |

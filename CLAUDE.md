@@ -55,7 +55,8 @@ PostgreSQL 16 ([ADR-0010](docs/adr/0010-async-backend.md)).
   argon2-cffi python-multipart httpx anyio` + dev: `pytest pytest-asyncio httpx ruff`;
 - панель: `react react-dom react-router-dom @tanstack/react-query @dnd-kit/core
   @dnd-kit/sortable` + dev: `typescript vite @vitejs/plugin-react vitest`;
-- виджет: рантайм-зависимостей нет; dev: `typescript esbuild size-limit vitest jsdom`;
+- виджет: рантайм-зависимостей нет; dev: `typescript esbuild vitest jsdom` (проверка
+  бюджета — свой `size.mjs` на `zlib`, пакет `size-limit` не понадобился);
 - e2e: `@playwright/test`;
 - инструменты разработчика в корневом `.venv`: `pre-commit`.
 

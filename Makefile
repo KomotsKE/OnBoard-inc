@@ -41,19 +41,21 @@ revision: ## создать миграцию: make revision m="описание"
 seed: ## наполнить БД демо-данными
 	$(call STUB,T0.11)
 
-test: ## pytest + vitest панели (виджет подключится в T0.7)
+test: ## pytest + vitest панели и виджета
 	docker compose run --rm --no-deps api pytest
 	docker compose run --rm --no-deps panel npm test
+	docker compose run --rm --no-deps widget npm test
 
-lint: ## ruff + tsc панели
+lint: ## ruff + tsc панели и виджета
 	docker compose run --rm --no-deps api sh -c "ruff check . && ruff format --check ."
 	docker compose run --rm --no-deps panel npm run typecheck
+	docker compose run --rm --no-deps widget npm run typecheck
 
 e2e: ## Playwright
 	$(call STUB,T2.1)
 
 size: ## бюджет размера бандлов виджета
-	$(call STUB,T0.7)
+	docker compose run --rm --no-deps widget npm run size
 
 publish-backend: ## зеркало backend/ во внешний репозиторий
 	$(call STUB,T0.10)
