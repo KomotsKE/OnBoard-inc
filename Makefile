@@ -41,10 +41,10 @@ revision: ## создать миграцию: make revision m="описание"
 seed: ## наполнить БД демо-данными
 	$(call STUB,T0.11)
 
-test: ## pytest + vitest + tsc --noEmit
+test: ## pytest (vitest и tsc подключатся в T0.6 и T0.7)
 	docker compose run --rm --no-deps api pytest
 
-lint: ## ruff + tsc
+lint: ## ruff (tsc подключится в T0.6)
 	docker compose run --rm --no-deps api sh -c "ruff check . && ruff format --check ."
 
 e2e: ## Playwright
