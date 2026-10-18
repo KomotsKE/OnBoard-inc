@@ -13,7 +13,7 @@ from pathlib import Path
 import httpx
 import pytest
 from alembic.config import Config
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -105,6 +105,20 @@ def session_factory(connection) -> async_sessionmaker[AsyncSession]:
 async def db(session_factory) -> AsyncSession:
     async with session_factory() as session:
         yield session
+
+
+@pytest.fixture
+def count_queries(connection):
+    """Счётчик SQL-запросов: на списковых эндпоинтах он должен быть константой,
+    а не расти с числом записей (§12.6 docs/conventions.md)."""
+    counter = {"n": 0}
+
+    def before(*_args, **_kwargs) -> None:
+        counter["n"] += 1
+
+    event.listen(connection.sync_engine, "before_cursor_execute", before)
+    yield counter
+    event.remove(connection.sync_engine, "before_cursor_execute", before)
 
 
 @pytest.fixture

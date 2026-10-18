@@ -13,8 +13,9 @@ from app.core.config import Settings, get_settings
 from app.core.errors import UnauthorizedError
 from app.core.security import read_access_token
 from app.db.session import open_session
-from app.models import Project, User
+from app.models import Project, Tour, User
 from app.services import projects as projects_service
+from app.services import tours as tours_service
 
 
 def settings_dep() -> Settings:
@@ -89,3 +90,15 @@ async def owned_project(
 
 
 OwnedProject = Annotated[Project, Depends(owned_project)]
+
+
+async def owned_tour(
+    tour_id: uuid.UUID,
+    user: CurrentUser,
+    session: PanelSession,
+) -> Tour:
+    """Тур владельца: одним запросом, с фильтром по владельцу в SQL."""
+    return await tours_service.get_owned(session, user.id, tour_id)
+
+
+OwnedTour = Annotated[Tour, Depends(owned_tour)]

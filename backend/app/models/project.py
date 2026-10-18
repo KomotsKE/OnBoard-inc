@@ -39,3 +39,6 @@ class Project(Base):
     )
 
     user: Mapped[User] = relationship(back_populates="projects")
+    tours: Mapped[list["Tour"]] = relationship(  # noqa: F821
+        back_populates="project", cascade="all, delete-orphan"
+    )

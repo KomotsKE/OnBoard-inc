@@ -11,7 +11,7 @@ from tests.factories import make_project, make_user
 
 async def test_writes_are_visible_inside_the_test(db):
     user = await make_user(db)
-    await make_project(db, user_id=user["id"])
+    await make_project(db, user=user)
 
     users = await db.scalar(text("SELECT count(*) FROM users"))
     projects = await db.scalar(text("SELECT count(*) FROM projects"))
@@ -57,6 +57,4 @@ async def test_api_writes_share_the_test_transaction(client, db):
     response = await client.get("/health")
 
     assert response.status_code == 200
-    assert (
-        await db.scalar(text("SELECT count(*) FROM users WHERE id = :id"), {"id": user["id"]}) == 1
-    )
+    assert await db.scalar(text("SELECT count(*) FROM users WHERE id = :id"), {"id": user.id}) == 1
