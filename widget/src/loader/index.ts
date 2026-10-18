@@ -48,9 +48,14 @@ export type WidgetConfig = {
 type OnBoardGlobal = {
   version: string;
   config: LoaderConfig;
-  /** Конфиг для ядра: оно читает его при старте (T2.5), а не запрашивает снова. */
+  /** Конфиг для ядра: оно читает его при старте, а не запрашивает снова. */
   boot?: WidgetConfig;
+  /** Появляются вместе с ядром (§6 docs/conventions.md). */
+  start?: () => void;
+  stop?: () => void;
 };
+
+type HistoryMethod = "pushState" | "replaceState";
 
 /** Параметры берутся с тега, который вставил клиент: `data-key` и `data-api`. */
 export function readConfig(script: HTMLScriptElement | null): LoaderConfig | null {
@@ -116,23 +121,106 @@ export function loadCore(document: Document, src: string): void {
   (document.head ?? document.documentElement).appendChild(script);
 }
 
-async function boot(target: Window, api: OnBoardGlobal): Promise<void> {
-  try {
-    const config = await fetchConfig(configUrl(api.config, pageUrl(target.location)));
-    if (!config) {
+/**
+ * Следит за сменой адреса в SPA.
+ *
+ * History API не сообщает о `pushState` и `replaceState` событиями, поэтому
+ * обёртка — единственный способ о них узнать. Это записанное исключение из
+ * инварианта №3 «встроенные объекты не патчим»: оригинал вызывается всегда,
+ * его результат возвращается как есть, а при остановке метод возвращается
+ * на место.
+ *
+ * Вызовы схлопываются: SPA часто делает `pushState`, а следом сразу
+ * `replaceState` — реагировать стоит один раз, на итоговый адрес.
+ */
+export function watchUrl(target: Window, onChange: () => void): () => void {
+  const history = target.history;
+  const originals: Partial<Record<HistoryMethod, History["pushState"]>> = {};
+  let scheduled = false;
+
+  function schedule(): void {
+    if (scheduled) {
       return;
     }
-    api.boot = config;
-    if (!config.tour) {
-      // Главная экономия двухэтапной загрузки: на страницах без тура ядро
-      // не скачивается вовсе (ADR-0001).
-      console.debug("[OnBoard] для этой страницы тура нет");
-      return;
-    }
-    loadCore(target.document, config.core_url);
-  } catch (error) {
-    console.debug("[OnBoard] загрузка остановлена", error);
+    scheduled = true;
+    target.setTimeout(() => {
+      scheduled = false;
+      onChange();
+    }, 0);
   }
+
+  for (const name of ["pushState", "replaceState"] as HistoryMethod[]) {
+    const original = history[name];
+    originals[name] = original;
+    history[name] = function (this: History, ...args: Parameters<History["pushState"]>) {
+      // Сначала отдаём работу сайту и возвращаем его результат, потом свои дела.
+      const result = original.apply(this, args);
+      schedule();
+      return result;
+    };
+  }
+
+  target.addEventListener("popstate", schedule);
+
+  return () => {
+    for (const name of ["pushState", "replaceState"] as HistoryMethod[]) {
+      const original = originals[name];
+      // Если поверх нас встал кто-то ещё, чужую обёртку не срываем.
+      if (original && history[name] !== original) {
+        history[name] = original;
+      }
+    }
+    target.removeEventListener("popstate", schedule);
+  };
+}
+
+/**
+ * Запрашивает конфиг для текущего адреса и приводит виджет в соответствие.
+ *
+ * На смене адреса виджет перезапускается целиком, а не донастраивается:
+ * после перерисовки SPA прежний элемент шага может быть уже не на странице,
+ * и подсветка считала бы геометрию мёртвого узла. Прогресс сохранён, поэтому
+ * тур продолжится с того же шага (§3.3 docs/idea.md).
+ */
+export function createApplier(target: Window, api: OnBoardGlobal): () => Promise<void> {
+  // Состояние живёт в замыкании, а не в модуле: это состояние одной страницы.
+  let coreRequested = false;
+  let lastUrl: string | null = null;
+
+  return async function apply(): Promise<void> {
+    try {
+      const page = pageUrl(target.location);
+      if (page === lastUrl) {
+        // Сменился только hash или адрес переписали тем же значением.
+        return;
+      }
+      lastUrl = page;
+
+      const config = await fetchConfig(configUrl(api.config, page));
+      if (!config) {
+        return;
+      }
+      api.boot = config;
+
+      if (!config.tour) {
+        // Главная экономия двухэтапной загрузки: на страницах без тура ядро
+        // не скачивается вовсе (ADR-0001). Если тур шёл — он сюда не относится.
+        console.debug("[OnBoard] для этой страницы тура нет");
+        api.stop?.();
+        return;
+      }
+
+      if (!coreRequested) {
+        coreRequested = true;
+        loadCore(target.document, config.core_url);
+        return;
+      }
+      // Ядро уже на странице: перезапускаем его с новым конфигом.
+      api.start?.();
+    } catch (error) {
+      console.debug("[OnBoard] загрузка остановлена", error);
+    }
+  };
 }
 
 export function start(target: Window = window): void {
@@ -154,7 +242,13 @@ export function start(target: Window = window): void {
     // Глобал ставится до запроса конфига: второй сниппет на той же странице
     // должен увидеть нас сразу, а не успеть отправить свой запрос.
     (target as unknown as Record<string, unknown>)[GLOBAL] = api;
-    void boot(target, api);
+
+    const apply = createApplier(target, api);
+    void apply();
+    // Переходы в SPA не перезагружают страницу, поэтому без этого тур
+    // появлялся бы только после F5 — а в одностраничном приложении его
+    // почти никто не нажимает.
+    watchUrl(target, () => void apply());
   } catch (error) {
     console.debug("[OnBoard] загрузчик остановлен", error);
   }
