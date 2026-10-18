@@ -52,6 +52,9 @@ lint: ## ruff + tsc панели и виджета
 	docker compose run --rm --no-deps widget npm run typecheck
 
 e2e: up seed ## Playwright против стенда (поднимает стек и демо-данные)
+	# Бандлы пересобираются явно: сервис widget одноразовый, и после правок
+	# в src стенд иначе отдаёт прошлую сборку, а сценарии падают не по делу.
+	docker compose run --rm --no-deps widget npm run build
 	cd e2e && npm install --no-audit --no-fund && npx playwright test
 
 size: ## бюджет размера бандлов виджета

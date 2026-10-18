@@ -43,6 +43,23 @@
           <button type="button" data-testid="dashboard-target">Цель на дашборде</button>
         </div>`,
     },
+    "/delayed": {
+      title: "Отложенная цель",
+      html: `
+        <div class="card">
+          <h1>Отложенная цель</h1>
+          <p>
+            На странице ровно один интересный элемент, и он появляется через
+            ${DELAY_MS} мс после отрисовки.
+          </p>
+          <p class="muted">
+            Отдельный маршрут, а не <code>/reports</code>: неизвестный путь стенд
+            заменяет на <code>/reports</code> через <code>replaceState</code>
+            раньше, чем успевает выполниться async-загрузчик виджета.
+          </p>
+          <div id="delayed-slot"></div>
+        </div>`,
+    },
     "/settings": {
       title: "Настройки",
       html: `

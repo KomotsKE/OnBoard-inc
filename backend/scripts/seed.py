@@ -38,6 +38,13 @@ STAND_ORIGIN = "http://localhost:8080"
 # это страница «без тура» для e2e.
 TOUR_PATH = "/reports"
 
+# Второй тур — ровно про ожидание элемента: его единственный шаг смотрит на
+# кнопку, которую стенд вставляет через две секунды. Путь /delayed стенд
+# отрисовывает как /reports, но под условие первого тура он не попадает, так
+# что какой тур показывается на какой странице — однозначно.
+DELAYED_PATH = "/delayed"
+DELAYED_STEP = ('[data-testid="export-button"]', "Экспорт", "Кнопка появляется не сразу.")
+
 STEPS = [
     ('[data-testid="filters-button"]', "Фильтры", "Отчёт настраивается здесь."),
     ('[data-testid="export-button"]', "Экспорт", "Кнопка появляется не сразу — так бывает."),
@@ -88,14 +95,22 @@ async def _create_projects(session: AsyncSession, user: User) -> tuple[Project, 
     return stand, empty
 
 
-async def _create_tour(session: AsyncSession, project: Project) -> tuple[Tour, list[Step]]:
+async def _create_tour(
+    session: AsyncSession,
+    project: Project,
+    *,
+    name: str,
+    mode: str,
+    value: str,
+    steps: list[tuple[str, str, str]],
+) -> tuple[Tour, list[Step]]:
     now = datetime.now(UTC)
     tour = Tour(
         project_id=project.id,
-        name="Знакомство с отчётами",
+        name=name,
         status="published",
-        url_match_mode="prefix",
-        url_match_value=TOUR_PATH,
+        url_match_mode=mode,
+        url_match_value=value,
         show_once=False,  # Иначе демо-тур показался бы один раз и исчез.
         published_at=now,
         updated_at=now,
@@ -103,13 +118,13 @@ async def _create_tour(session: AsyncSession, project: Project) -> tuple[Tour, l
     session.add(tour)
     await session.flush()
 
-    steps = [
+    created = [
         Step(tour_id=tour.id, position=index, selector=selector, title=title, body=body)
-        for index, (selector, title, body) in enumerate(STEPS)
+        for index, (selector, title, body) in enumerate(steps)
     ]
-    session.add_all(steps)
+    session.add_all(created)
     await session.flush()
-    return tour, steps
+    return tour, created
 
 
 def _run_events(
@@ -186,7 +201,22 @@ async def seed() -> None:
             await _reset(session)
             user = await _create_user(session)
             stand, empty = await _create_projects(session, user)
-            tour, steps = await _create_tour(session, stand)
+            tour, steps = await _create_tour(
+                session,
+                stand,
+                name="Знакомство с отчётами",
+                mode="prefix",
+                value=TOUR_PATH,
+                steps=STEPS,
+            )
+            delayed, _ = await _create_tour(
+                session,
+                stand,
+                name="Ожидание элемента",
+                mode="exact",
+                value=DELAYED_PATH,
+                steps=[DELAYED_STEP],
+            )
             events = _create_events(stand, tour, steps)
             session.add_all(events)
     finally:
@@ -196,7 +226,8 @@ async def seed() -> None:
         "демо-данные готовы:\n"
         f"  вход в панель:   {DEMO_EMAIL} / {DEMO_PASSWORD}\n"
         f"  проекты:         {stand.name} ({STAND_PUBLIC_KEY}), {empty.name}\n"
-        f"  тур:             «{tour.name}», {len(steps)} шага, показ на {TOUR_PATH}\n"
+        f"  туры:            «{tour.name}» ({len(steps)} шага) на {TOUR_PATH},\n"
+        f"                   «{delayed.name}» (1 шаг) на {DELAYED_PATH}\n"
         f"  событий:         {len(events)} в {TOTAL_RUNS} прогонах"
     )
 
