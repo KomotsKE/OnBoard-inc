@@ -5,7 +5,7 @@
 // берёт из manifest.json, поэтому обновление ядра не требует правок у клиента.
 
 import { createHash } from "node:crypto";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { build } from "esbuild";
 
 const OUT = "dist";
@@ -32,8 +32,14 @@ async function buildHashed(name, entry) {
   return file;
 }
 
-await rm(OUT, { recursive: true, force: true });
+// Каталог не удаляется, а очищается: его монтируют в стенд и в API, и удаление
+// меняет inode — монтирование остаётся висеть на удалённом каталоге, после чего
+// nginx отдаёт 404, а публичный конфиг не находит манифест. Проверено: именно
+// так сломался первый прогон e2e.
 await mkdir(OUT, { recursive: true });
+for (const name of await readdir(OUT)) {
+  await rm(`${OUT}/${name}`, { recursive: true, force: true });
+}
 
 await build({ ...COMMON, entryPoints: ["src/loader/index.ts"], outfile: `${OUT}/loader.js` });
 const manifest = {
