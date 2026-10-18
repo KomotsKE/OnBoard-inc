@@ -4,6 +4,8 @@ import re
 
 import pytest
 
+from app.core.config import get_settings
+
 PASSWORD = "очень-длинный-пароль-владельца"
 
 
@@ -157,7 +159,10 @@ class TestDelete:
 
 
 class TestSnippet:
-    async def test_contains_key_and_addresses(self, client):
+    async def test_contains_key_and_addresses_from_settings(self, client):
+        """Адреса берутся из настроек, а не из литералов в коде: при переезде
+        на сервер меняется переменная окружения, а не выданные сниппеты."""
+        settings = get_settings()
         auth = await account(client, "owner@example.test")
         project = await make_project(client, auth)
 
@@ -165,12 +170,26 @@ class TestSnippet:
             "snippet"
         ]
 
+        api = str(settings.public_api_url).rstrip("/")
+        widget = str(settings.widget_base_url).rstrip("/")
         assert project["public_key"] in snippet
-        assert "/loader.js" in snippet
+        assert f'data-api="{api}"' in snippet
+        assert f'src="{widget}/loader.js"' in snippet
         assert "async" in snippet
         # Без завершающего слэша: иначе виджет соберёт адрес с двойным слэшем.
-        assert 'data-api="http://localhost:8000"' in snippet
         assert "//loader.js" not in snippet.replace("http://", "")
+
+    async def test_snippet_follows_key_of_the_requested_project(self, client):
+        auth = await account(client, "owner@example.test")
+        first = await make_project(client, auth, name="Первый")
+        second = await make_project(client, auth, name="Второй")
+
+        snippet = (await client.get(f"/v1/projects/{second['id']}/snippet", headers=auth)).json()[
+            "snippet"
+        ]
+
+        assert second["public_key"] in snippet
+        assert first["public_key"] not in snippet
 
 
 class TestTenantIsolation:
