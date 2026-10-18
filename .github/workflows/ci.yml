@@ -107,6 +107,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Стек и демо-данные
+        if: hashFiles('e2e/package.json') != ''
+        run: |
+          grep -v '^ONBOARD_\(JWT\|EDITOR_TOKEN\)_SECRET=' .env.example > .env
+          # Секреты из шаблона нерабочие — для прогона генерируем настоящие.
+          python -c "import secrets; print('ONBOARD_JWT_SECRET=' + secrets.token_urlsafe(48))" >> .env
+          python -c "import secrets; print('ONBOARD_EDITOR_TOKEN_SECRET=' + secrets.token_urlsafe(48))" >> .env
+          docker compose up -d --wait
+          docker compose run --rm api python -m scripts.seed
       - name: Playwright
         if: hashFiles('e2e/package.json') != ''
         working-directory: e2e
@@ -114,3 +126,6 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
           npx playwright test
+      - name: Логи стека при падении
+        if: failure()
+        run: docker compose logs --tail=200

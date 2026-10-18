@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Стенд OnBoard — сниппет дважды</title>
+    <link rel="stylesheet" href="/styles/hostile.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <strong data-testid="brand">Отчётница</strong>
+      <button type="button" id="filters" data-testid="filters-button">Фильтры</button>
+    </header>
+
+    <main class="layout">
+      <div class="card">
+        <h1>Сниппет вставлен дважды</h1>
+        <p>
+          Так бывает, когда тег добавили и в шаблон страницы, и в шаблон лэйаута.
+          Виджет обязан запуститься один раз: один запрос конфига, одно ядро,
+          один оверлей.
+        </p>
+        <p class="muted">
+          Адрес начинается с <code>/reports</code>, поэтому демо-тур из
+          <code>make seed</code> подходит и этой странице.
+        </p>
+      </div>
+    </main>
+
+    <!-- Первый сниппет: в шаблоне страницы. -->
+    <script
+      src="/widget/loader.js"
+      data-key="pk_00000000000000000000000000000001"
+      data-api="http://localhost:8000"
+      async
+    ></script>
+    <!-- Второй сниппет: тот же тег, вставленный ещё раз. -->
+    <script
+      src="/widget/loader.js"
+      data-key="pk_00000000000000000000000000000001"
+      data-api="http://localhost:8000"
+      async
+    ></script>
+  </body>
+</html>

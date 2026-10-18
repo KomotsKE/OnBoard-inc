@@ -51,8 +51,8 @@ lint: ## ruff + tsc панели и виджета
 	docker compose run --rm --no-deps panel npm run typecheck
 	docker compose run --rm --no-deps widget npm run typecheck
 
-e2e: ## Playwright
-	$(call STUB,T2.1)
+e2e: up seed ## Playwright против стенда (поднимает стек и демо-данные)
+	cd e2e && npm install --no-audit --no-fund && npx playwright test
 
 size: ## бюджет размера бандлов виджета
 	docker compose run --rm --no-deps widget npm run size
