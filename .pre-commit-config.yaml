@@ -43,9 +43,11 @@ repos:
 
   # Python: линтер и форматтер бэкенда
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.6
+    # Версия совпадает с backend/pyproject.toml: иначе хук и `make lint`
+    # расходятся в сортировке импортов и дают противоречивые сигналы.
+    rev: v0.15.22
     hooks:
-      - id: ruff
+      - id: ruff-check
         args: [--fix]
         files: ^backend/
       - id: ruff-format
