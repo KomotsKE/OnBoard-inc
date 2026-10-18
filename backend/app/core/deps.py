@@ -13,7 +13,8 @@ from app.core.config import Settings, get_settings
 from app.core.errors import UnauthorizedError
 from app.core.security import read_access_token
 from app.db.session import open_session
-from app.models import User
+from app.models import Project, User
+from app.services import projects as projects_service
 
 
 def settings_dep() -> Settings:
@@ -69,3 +70,22 @@ async def current_user(request: Request, session: PanelSession) -> User:
     if user is None:
         raise UnauthorizedError("access-токен недействителен")
     return user
+
+
+CurrentUser = Annotated[User, Depends(current_user)]
+
+
+async def owned_project(
+    project_id: uuid.UUID,
+    user: CurrentUser,
+    session: PanelSession,
+) -> Project:
+    """Проект владельца из пути запроса.
+
+    Фильтр по `user_id` стоит в самом запросе к базе: проверка после выборки
+    забывается в новом обработчике, и это сразу утечка (ADR-0006).
+    """
+    return await projects_service.get_owned(session, user.id, project_id)
+
+
+OwnedProject = Annotated[Project, Depends(owned_project)]

@@ -19,6 +19,7 @@ from sqlalchemy import text
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.v1.panel import auth as auth_routes
+from app.api.v1.panel import projects as project_routes
 from app.core.config import get_settings
 from app.core.errors import (
     AppError,
@@ -128,6 +129,7 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler)
 
 app.include_router(auth_routes.router)
 app.include_router(auth_routes.me_router)
+app.include_router(project_routes.router)
 
 
 @app.get("/health")

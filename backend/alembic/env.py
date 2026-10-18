@@ -8,6 +8,7 @@ from logging.config import fileConfig
 
 from sqlalchemy import create_engine, pool
 
+import app.models  # noqa: F401 — регистрирует модели в Base.metadata
 from alembic import context
 from app.core.config import get_settings
 from app.db.base import Base
@@ -16,8 +17,9 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Новые модели должны быть импортированы здесь (или в app/models/__init__.py),
-# иначе autogenerate их не увидит.
+# Импорт app.models выше обязателен: без него метаданные пусты и autogenerate
+# предлагает удалить все существующие таблицы. Новая модель добавляется
+# в app/models/__init__.py.
 target_metadata = Base.metadata
 
 

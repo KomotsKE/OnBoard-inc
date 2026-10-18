@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     editor_token_secret: SecretStr
     public_api_url: AnyHttpUrl
     panel_origin: AnyHttpUrl
+    # Где отдаются бандлы виджета. В разработке это nginx со стендом, в проде —
+    # API или CDN; сниппет у клиента ссылается именно сюда.
+    widget_base_url: AnyHttpUrl
 
     # Пул и таймауты — §9.1 docs/vision.md.
     db_pool_size: int = 10

@@ -105,5 +105,9 @@ make           # список всех целей
 **`curl localhost:8000/health` отвечает 503.** Значит API поднялся, а база недоступна:
 посмотрите `docker compose logs api` и состояние postgres в `docker compose ps`.
 
+**Поправили `.env`, а приложение всё ещё падает на отсутствующей переменной.**
+`docker compose restart` перезапускает контейнер с прежним окружением: `env_file`
+читается при создании. Нужно пересоздать — `make up` или `docker compose up -d api`.
+
 **Нужно начать с чистой базы.** `docker compose down -v` удаляет том `pgdata`
 вместе со всеми локальными данными, затем `make up`.
