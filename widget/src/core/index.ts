@@ -8,3 +8,6 @@
  */
 
 export const CORE_VERSION = "0.1.0";
+
+export { createResolver, isVisible, WAIT_TIMEOUT_MS } from "./resolver";
+export type { MissingReason, Resolution, Resolver } from "./resolver";
