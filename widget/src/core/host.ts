@@ -42,6 +42,20 @@ const STYLES = `
   pointer-events: auto;
 }
 .tip[hidden] { display: none; }
+/* Фокус приходит на саму подсказку, чтобы её прочитал скринридер; рамка
+   на контейнере в этот момент — шум, у кнопок она своя. */
+.tip:focus { outline: none; }
+/* Текст для скринридера: точки прогресса он не озвучивает. */
+.tip__progress {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 .tip__arrow {
   position: fixed;
   width: 10px;
@@ -68,8 +82,8 @@ const STYLES = `
   gap: 10px;
   margin-top: 14px;
 }
-.tip__dots { display: flex; gap: 5px; margin-right: auto; }
-.tip__dot { width: 6px; height: 6px; border-radius: 50%; background: #CBD5E1; }
+.tip__dots { display: flex; align-items: center; gap: 5px; margin-right: auto; }
+.tip__dot { width: 6px; height: 6px; border-radius: 50%; background: #78839A; }
 .tip__dot[data-current] { background: var(--onboard-primary, #2563EB); }
 .tip__button {
   box-sizing: border-box;
@@ -81,7 +95,7 @@ const STYLES = `
   cursor: pointer;
 }
 .tip__button--primary { background: var(--onboard-primary, #2563EB); color: #fff; }
-.tip__button--ghost { background: transparent; color: #64748B; font-weight: 500; }
+.tip__button--ghost { background: transparent; color: #475569; font-weight: 500; }
 .tip__button:focus-visible { outline: 2px solid var(--onboard-primary, #2563EB); outline-offset: 2px; }
 `;
 

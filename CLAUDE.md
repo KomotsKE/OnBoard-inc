@@ -59,7 +59,7 @@ PostgreSQL 16 ([ADR-0010](docs/adr/0010-async-backend.md)).
   @dnd-kit/sortable` + dev: `typescript vite @vitejs/plugin-react vitest`;
 - виджет: рантайм-зависимостей нет; dev: `typescript esbuild vitest jsdom` (проверка
   бюджета — свой `size.mjs` на `zlib`, пакет `size-limit` не понадобился);
-- e2e: `@playwright/test`;
+- e2e: `@playwright/test`, `@axe-core/playwright` (проверка доступности, критерий T2.6);
 - инструменты разработчика в корневом `.venv`: `pre-commit`.
 
 Всё остальное — только после согласования.

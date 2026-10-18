@@ -237,3 +237,135 @@ describe("подсказка в shadow root", () => {
     expect(root.querySelector('[data-part="tip"]')).toBeNull();
   });
 });
+
+describe("клавиатура и фокус", () => {
+  const LABELS = { next: "Далее", skip: "Пропустить", done: "Готово" };
+
+  function mount() {
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = host.attachShadow({ mode: "open" });
+    const handlers = { onNext: vi.fn(), onBack: vi.fn(), onSkip: vi.fn() };
+    const tooltip = createTooltip(root, LABELS, handlers);
+    const element = document.createElement("button");
+    document.body.append(element);
+    return { root, tooltip, element, handlers };
+  }
+
+  function show(mounted: ReturnType<typeof mount>, index = 1, total = 3): void {
+    mounted.tooltip.show({ title: "Шаг", body: "Текст", placement: "auto" }, mounted.element, {
+      index,
+      total,
+    });
+  }
+
+  function press(node: Element | Document, key: string, shiftKey = false): void {
+    node.dispatchEvent(new KeyboardEvent("keydown", { key, shiftKey, bubbles: true }));
+  }
+
+  function part(root: ShadowRoot, name: string): HTMLElement {
+    const node = root.querySelector<HTMLElement>(`[data-part="${name}"]`);
+    if (!node) {
+      throw new Error(`в подсказке нет части ${name}`);
+    }
+    return node;
+  }
+
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("при показе шага фокус переходит на подсказку", () => {
+    const mounted = mount();
+
+    show(mounted);
+
+    // Скринридер читает подсказку по приходу фокуса; `aria-live` на том же
+    // узле дал бы второе чтение того же текста.
+    expect(mounted.root.activeElement).toBe(part(mounted.root, "tip"));
+  });
+
+  it("Esc пропускает тур, даже когда фокус остался на странице", () => {
+    const mounted = mount();
+    show(mounted);
+    const outside = document.createElement("input");
+    document.body.append(outside);
+    outside.focus();
+
+    press(document, "Escape");
+
+    expect(mounted.handlers.onSkip).toHaveBeenCalledTimes(1);
+  });
+
+  it("Esc до показа подсказки ничего не делает", () => {
+    const mounted = mount();
+
+    press(document, "Escape");
+
+    expect(mounted.handlers.onSkip).not.toHaveBeenCalled();
+  });
+
+  it("стрелки ведут по шагам", () => {
+    const mounted = mount();
+    show(mounted);
+
+    press(part(mounted.root, "tip"), "ArrowRight");
+    press(part(mounted.root, "tip"), "ArrowLeft");
+
+    expect(mounted.handlers.onNext).toHaveBeenCalledTimes(1);
+    expect(mounted.handlers.onBack).toHaveBeenCalledTimes(1);
+  });
+
+  it("Tab с последней кнопки возвращается к первой", () => {
+    const mounted = mount();
+    show(mounted);
+    part(mounted.root, "next").focus();
+
+    press(part(mounted.root, "tip"), "Tab");
+
+    // Иначе посетитель «проваливается» в страницу под затемнением.
+    expect(mounted.root.activeElement).toBe(part(mounted.root, "skip"));
+  });
+
+  it("Shift+Tab с первой кнопки уходит на последнюю", () => {
+    const mounted = mount();
+    show(mounted);
+    part(mounted.root, "skip").focus();
+
+    press(part(mounted.root, "tip"), "Tab", true);
+
+    expect(mounted.root.activeElement).toBe(part(mounted.root, "next"));
+  });
+
+  it("Tab между кнопками браузер обрабатывает сам", () => {
+    const mounted = mount();
+    show(mounted);
+    part(mounted.root, "skip").focus();
+
+    const event = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
+    part(mounted.root, "tip").dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it("номер шага доступен словами", () => {
+    const mounted = mount();
+
+    show(mounted, 1, 4);
+
+    // Точки прогресса скринридер не озвучивает.
+    expect(part(mounted.root, "progress").textContent).toBe("Шаг 2 из 4");
+  });
+
+  it("после тура фокус возвращается туда, где был", () => {
+    const mounted = mount();
+    const outside = document.createElement("input");
+    document.body.append(outside);
+    outside.focus();
+    show(mounted);
+
+    mounted.tooltip.stop();
+
+    expect(document.activeElement).toBe(outside);
+  });
+});

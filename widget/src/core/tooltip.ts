@@ -134,8 +134,12 @@ export function createTooltip(
   tip.dataset.part = "tip";
   tip.setAttribute("role", "dialog");
   // Не modal: страница под подсказкой остаётся доступной, целевой элемент
-  // кликабелен. Фокус-трап и Esc — T2.6.
-  tip.setAttribute("aria-live", "polite");
+  // кликабелен и виден.
+  tip.setAttribute("aria-modal", "false");
+  // Фокус переводится на саму подсказку при показе шага — этого достаточно,
+  // чтобы скринридер прочитал её целиком. `aria-live` на том же узле дал бы
+  // второе чтение того же текста.
+  tip.tabIndex = -1;
   tip.hidden = true;
 
   const arrow = doc.createElement("div");
@@ -151,10 +155,17 @@ export function createTooltip(
   const body = doc.createElement("p");
   body.className = "tip__body";
   body.dataset.part = "body";
+  body.id = "onboard-tip-body";
+  tip.setAttribute("aria-describedby", body.id);
 
   const dots = doc.createElement("div");
   dots.className = "tip__dots";
   dots.dataset.part = "dots";
+
+  // Точки прогресса скринридер не озвучивает: номер шага нужен словами.
+  const progress = doc.createElement("span");
+  progress.className = "tip__progress";
+  progress.dataset.part = "progress";
 
   const back = doc.createElement("button");
   back.type = "button";
@@ -179,11 +190,70 @@ export function createTooltip(
   footer.className = "tip__footer";
   footer.append(dots, skip, back, next);
 
-  tip.append(arrow, title, body, footer);
+  // Текст для скринридера стоит вне точек: `drawDots` очищает свой контейнер
+  // целиком, и внутри он затирался бы на каждом шаге.
+  tip.append(arrow, title, body, progress, footer);
   root.append(tip);
 
   let target: Element | null = null;
   let placement: Placement = "auto";
+  // Куда вернуть фокус, когда тур закончится: забираем фокус у страницы —
+  // обязаны и отдать.
+  let focusWasOn: Element | null = null;
+
+  function buttons(): HTMLElement[] {
+    return [skip, back, next].filter((button) => !button.hidden);
+  }
+
+  /**
+   * Клавиатура подсказки.
+   *
+   * Tab ходит по кругу внутри подсказки: иначе посетитель, дойдя до последней
+   * кнопки, «проваливается» в страницу под затемнением и не понимает, где он.
+   * Esc слушается на документе, а не на подсказке: пропустить тур нужно и
+   * тогда, когда фокус остался на странице.
+   */
+  function onTipKeydown(event: KeyboardEvent): void {
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      handlers.onNext();
+      return;
+    }
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      handlers.onBack();
+      return;
+    }
+    if (event.key !== "Tab") {
+      return;
+    }
+
+    const order = buttons();
+    if (order.length === 0) {
+      return;
+    }
+    const root = tip.getRootNode() as ShadowRoot;
+    const index = order.indexOf(root.activeElement as HTMLElement);
+    const last = order.length - 1;
+    const atEdge = event.shiftKey ? index <= 0 : index === last;
+    if (!atEdge) {
+      return;
+    }
+    event.preventDefault();
+    (event.shiftKey ? order[last] : order[0])?.focus();
+  }
+
+  function onDocumentKeydown(event: KeyboardEvent): void {
+    // Ни preventDefault, ни остановки всплытия: у страницы клиента может быть
+    // своя модалка, и закрываться по Esc она должна так же, как без нас.
+    // Отменять у Escape, по сути, нечего, а чужие обработчики — не наши.
+    if (event.key === "Escape" && !tip.hidden) {
+      handlers.onSkip();
+    }
+  }
+
+  tip.addEventListener("keydown", onTipKeydown);
+  doc.addEventListener("keydown", onDocumentKeydown, true);
 
   function drawDots(index: number, total: number): void {
     dots.textContent = "";
@@ -235,18 +305,34 @@ export function createTooltip(
       back.hidden = state.index === 0;
       next.textContent = state.index + 1 >= state.total ? labels.done : labels.next;
       drawDots(state.index, state.total);
+      progress.textContent = `Шаг ${state.index + 1} из ${state.total}`;
 
       // Показать до замера: у скрытого элемента нет размеров, а положение
       // считается от размеров подсказки.
       tip.hidden = false;
       reposition();
+
+      if (focusWasOn === null) {
+        focusWasOn = doc.activeElement;
+      }
+      // Фокус на подсказке: шаг читается скринридером, и дальше работает
+      // клавиатура, а не только мышь.
+      tip.focus({ preventScroll: true });
     },
 
     reposition,
 
     stop(): void {
       target = null;
+      tip.removeEventListener("keydown", onTipKeydown);
+      doc.removeEventListener("keydown", onDocumentKeydown, true);
       tip.remove();
+      // Возвращаем фокус туда, где он был до тура: иначе посетитель
+      // продолжает с начала страницы.
+      if (focusWasOn instanceof HTMLElement) {
+        focusWasOn.focus({ preventScroll: true });
+      }
+      focusWasOn = null;
     },
   };
 }
