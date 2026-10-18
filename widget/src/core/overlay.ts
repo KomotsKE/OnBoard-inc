@@ -7,17 +7,14 @@
  * наложения внутри трансформированных контейнеров, а восстанавливать исходные
  * значения после тура приходится вручную (инварианты №2 и №3).
  *
- * Весь наш UI живёт в Shadow DOM под одним хостом в `<body>`: в документ клиента
- * не добавляется ни одного правила CSS (ADR-0002).
+ * Рисование и слежение разведены: когда пересчитывать — решает watcher.ts,
+ * у которого тот же вопрос решается для подсказки.
  */
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
-/** Значение зафиксировано в ADR-0002: воевать за максимум z-index бессмысленно. */
-const HOST_Z_INDEX = 2147483000;
-
 /** Зазор между элементом и вырезом: иначе рамка ложится на границу элемента. */
-const HOLE_PADDING = 4;
+export const HOLE_PADDING = 4;
 
 /** Толщины двойной обводки — §4.4 docs/vision.md. */
 const INNER_RING = 2;
@@ -25,21 +22,13 @@ const OUTER_RING = 3;
 
 const DEFAULT_RADIUS = 8;
 
-export type OverlayTheme = {
-  primaryColor: string;
-  backdropOpacity: number;
-  /** Длина в px из темы проекта, например `8px`. */
-  borderRadius: string;
-};
-
 export type Overlay = {
-  /** Ставит или переносит вырез на элемент и начинает следить за геометрией. */
-  highlight: (element: Element) => void;
-  /** Снимает хост, слушатели и наблюдатели. После него страница как до нас. */
+  /** Ставит или переносит вырез на элемент. */
+  draw: (element: Element) => void;
   stop: () => void;
 };
 
-function radiusOf(value: string): number {
+export function radiusOf(value: string): number {
   // Тема допускает любую строку длиной до 16 символов; геометрии SVG нужны
   // пиксели, поэтому всё, кроме px, заменяется значением по умолчанию.
   const parsed = Number.parseFloat(value);
@@ -63,28 +52,21 @@ function place(node: SVGRectElement, x: number, y: number, width: number, height
   node.setAttribute("height", String(Math.max(height, 0)));
 }
 
-export function createOverlay(doc: Document, theme: OverlayTheme): Overlay {
+export function createOverlay(
+  root: ShadowRoot,
+  theme: { primaryColor: string; backdropOpacity: number; borderRadius: string },
+): Overlay {
+  const doc = root.ownerDocument;
   const radius = radiusOf(theme.borderRadius);
 
-  const host = doc.createElement("div");
-  host.dataset.onboard = "overlay";
-  // Чужому скринридеру затемнение не нужно; текст шага озвучивает подсказка (T2.4).
-  host.setAttribute("aria-hidden", "true");
-  // `all: initial` первым: он сбрасывает то, что мог навязать сброс стилей
-  // клиента, а следующие свойства задают наше поведение (ADR-0002).
-  host.style.cssText =
-    "all: initial; position: fixed; inset: 0;" +
-    ` z-index: ${HOST_Z_INDEX}; pointer-events: none;`;
-
-  const root = host.attachShadow({ mode: "open" });
-
   const svg = doc.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("aria-hidden", "true");
   svg.style.cssText = "display: block; width: 100%; height: 100%;";
 
   const hole = rect(doc, { "data-part": "hole", fill: "#000", rx: String(radius) });
   const mask = doc.createElementNS(SVG_NS, "mask");
-  mask.setAttribute("id", "onboard-hole");
   // Идентификатор живёт внутри shadow root и с чужими не пересекается.
+  mask.setAttribute("id", "onboard-hole");
   mask.setAttribute("maskUnits", "userSpaceOnUse");
   // Белое видно, чёрное вырезано: сначала открываем всё, потом пробиваем окно.
   mask.append(rect(doc, { x: "0", y: "0", width: "100%", height: "100%", fill: "#fff" }), hole);
@@ -123,78 +105,25 @@ export function createOverlay(doc: Document, theme: OverlayTheme): Overlay {
 
   svg.append(defs, backdrop, outerRing, innerRing);
   root.append(svg);
-  doc.body.append(host);
-
-  let target: Element | null = null;
-  let frame: number | null = null;
-
-  function draw(): void {
-    if (!target) {
-      return;
-    }
-    const box = target.getBoundingClientRect();
-    const x = box.left - HOLE_PADDING;
-    const y = box.top - HOLE_PADDING;
-    const width = box.width + HOLE_PADDING * 2;
-    const height = box.height + HOLE_PADDING * 2;
-
-    place(hole, x, y, width, height);
-    place(innerRing, x, y, width, height);
-    // Обводка рисуется по центру контура, поэтому белая смещается наружу
-    // ровно настолько, чтобы лечь вплотную к брендовой, без щели.
-    const gap = (INNER_RING + OUTER_RING) / 2;
-    place(outerRing, x - gap, y - gap, width + gap * 2, height + gap * 2);
-  }
-
-  /** Пересчёт не чаще кадра: scroll и ResizeObserver приходят пачками. */
-  function schedule(): void {
-    if (frame !== null) {
-      return;
-    }
-    frame = requestAnimationFrame(() => {
-      frame = null;
-      draw();
-    });
-  }
-
-  // capture: true — события scroll не всплывают, но в фазе погружения доходят
-  // до window от любого прокручиваемого контейнера внутри страницы.
-  const scrollOptions = { passive: true, capture: true } as const;
-  const view = doc.defaultView ?? window;
-  view.addEventListener("scroll", schedule, scrollOptions);
-  view.addEventListener("resize", schedule, { passive: true });
-
-  // Следим за размером цели и за размером страницы: вставка контента выше цели
-  // двигает её, и это меняет высоту документа.
-  //
-  // Опроса геометрии в бесконечном rAF-цикле нет: это та же граница, которую
-  // по умолчанию держит floating-ui в autoUpdate. Цена — перемещение цели
-  // чистым transform-переходом мы не отследим; взамен не жжём кадры на каждой
-  // странице клиента всё время тура.
-  const sizes = new ResizeObserver(schedule);
-  sizes.observe(doc.body);
 
   return {
-    highlight(element: Element): void {
-      if (target && target !== element) {
-        sizes.unobserve(target);
-      }
-      target = element;
-      sizes.observe(element);
-      // Сразу, а не через кадр: подсветка должна появиться вместе с шагом.
-      draw();
+    draw(element: Element): void {
+      const box = element.getBoundingClientRect();
+      const x = box.left - HOLE_PADDING;
+      const y = box.top - HOLE_PADDING;
+      const width = box.width + HOLE_PADDING * 2;
+      const height = box.height + HOLE_PADDING * 2;
+
+      place(hole, x, y, width, height);
+      place(innerRing, x, y, width, height);
+      // Обводка рисуется по центру контура, поэтому белая смещается наружу
+      // ровно настолько, чтобы лечь вплотную к брендовой, без щели.
+      const gap = (INNER_RING + OUTER_RING) / 2;
+      place(outerRing, x - gap, y - gap, width + gap * 2, height + gap * 2);
     },
 
     stop(): void {
-      view.removeEventListener("scroll", schedule, scrollOptions);
-      view.removeEventListener("resize", schedule);
-      sizes.disconnect();
-      if (frame !== null) {
-        cancelAnimationFrame(frame);
-        frame = null;
-      }
-      target = null;
-      host.remove();
+      svg.remove();
     },
   };
 }

@@ -11,7 +11,7 @@ import { expect, test, type Page } from "@playwright/test";
  * через две секунды.
  */
 
-const HOST = '[data-onboard="overlay"]';
+const HOST = '[data-onboard="host"]';
 const FILTERS = '[data-testid="filters-button"]';
 const EXPORT = '[data-testid="export-button"]';
 
@@ -100,24 +100,34 @@ test("окно следует за целью при прокрутке", async 
  * применилась бы, оверлей стал бы глухим прямоугольником — и все проверки
  * геометрии выше всё равно прошли бы.
  *
- * Снимки сравниваются побайтно с тем же участком после `OnBoard.stop()`:
- * эталонных картинок в репозитории нет, сравнивается страница сама с собой.
+ * Сравниваются отдельные пиксели, а не участки: тень подсказки заходит на
+ * нижний край выреза, и сравнение целого прямоугольника ловило бы её, а не
+ * маску. Эталонных картинок в репозитории нет — страница сравнивается сама
+ * с собой после `OnBoard.stop()`.
  */
+async function pixel(page: Page, x: number, y: number): Promise<Buffer> {
+  return page.screenshot({ clip: { x, y, width: 1, height: 1 } });
+}
+
+function centre(box: Box): [number, number] {
+  return [box.x + box.width / 2, box.y + box.height / 2];
+}
+
 test("вырез действительно прозрачный, а затемнение действительно затемняет", async ({ page }) => {
   await overlayStarted(page, "/reports");
-  const target = await boxOf(page, FILTERS);
-  const dimmed = await boxOf(page, ".rival-bubble");
+  const [targetX, targetY] = centre(await boxOf(page, FILTERS));
+  const [rivalX, rivalY] = centre(await boxOf(page, ".rival-bubble"));
 
-  const targetWithOverlay = await page.screenshot({ clip: target });
-  const rivalWithOverlay = await page.screenshot({ clip: dimmed });
+  const targetWithOverlay = await pixel(page, targetX, targetY);
+  const rivalWithOverlay = await pixel(page, rivalX, rivalY);
   await page.evaluate(() => {
     (window as unknown as { OnBoard: { stop: () => void } }).OnBoard.stop();
   });
 
-  // Внутри выреза страница выглядит ровно так же, как без виджета.
-  expect(targetWithOverlay.equals(await page.screenshot({ clip: target }))).toBe(true);
+  // В середине выреза страница выглядит ровно так же, как без виджета.
+  expect(targetWithOverlay.equals(await pixel(page, targetX, targetY))).toBe(true);
   // А чужой виджет с z-index 2147483000 затемнение всё-таки накрывает.
-  expect(rivalWithOverlay.equals(await page.screenshot({ clip: dimmed }))).toBe(false);
+  expect(rivalWithOverlay.equals(await pixel(page, rivalX, rivalY))).toBe(false);
 });
 
 test("DOM стенда не меняется", async ({ page }) => {

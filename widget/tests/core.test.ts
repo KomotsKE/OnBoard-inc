@@ -36,7 +36,7 @@ function bootWith(selector: string | null): void {
 }
 
 function overlayHost(): Element | null {
-  return document.querySelector('[data-onboard="overlay"]');
+  return document.querySelector('[data-onboard="host"]');
 }
 
 beforeEach(() => {
@@ -98,7 +98,7 @@ describe("запуск ядра", () => {
     await start(window);
     await start(window);
 
-    expect(document.querySelectorAll('[data-onboard="overlay"]')).toHaveLength(1);
+    expect(document.querySelectorAll('[data-onboard="host"]')).toHaveLength(1);
   });
 
   it("stop возвращает страницу в исходное состояние", async () => {
