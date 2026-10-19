@@ -16,7 +16,9 @@ const THEME: Theme = {
   text_color: "#1A2B3C",
   backdrop_opacity: 0.8,
   border_radius: "2px",
-  font_family: "Georgia, serif",
+  // Не Georgia: ею стенд враждебно переопределяет всё подряд, и соседний
+  // сценарий про изоляцию стилей принял бы наш шрифт за протёкший с страницы.
+  font_family: '"Courier New", monospace',
   next_label: "Дальше",
   skip_label: "Не сейчас",
   done_label: "Всё понятно",
@@ -55,7 +57,7 @@ test("тема проекта доезжает до подсказки на са
     // Затемнение, скругление, шрифт и цвет текста — оттуда же.
     expect(await page.locator('[data-part="backdrop"]').getAttribute("opacity")).toBe("0.8");
     expect(await page.locator('[data-part="hole"]').getAttribute("rx")).toBe("2");
-    expect(await styleOf(page, "tip", "font-family")).toContain("Georgia");
+    expect(await styleOf(page, "tip", "font-family")).toContain("Courier New");
     expect(await styleOf(page, "body", "color")).toBe("rgb(26, 43, 60)");
 
     // Подписи кнопок — тоже часть темы: клиенту может быть нужен свой тон.
