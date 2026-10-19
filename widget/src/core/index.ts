@@ -12,8 +12,9 @@
 // Тип описан один раз — в загрузчике, который этот конфиг и получает. Импорт
 // только типов: в бандл ядра код загрузчика не попадает.
 import type { WidgetConfig } from "../loader/index";
+import { createAnalytics } from "./analytics";
 import { createEngine, type EngineTour, resumeIndex } from "./engine";
-import { guard, report } from "./guard";
+import { guard, report, setErrorSink } from "./guard";
 import { createHost, type WidgetTheme } from "./host";
 import { createOverlay } from "./overlay";
 import { createProgressStore, openStorage } from "./progress";
@@ -27,7 +28,7 @@ type Theme = WidgetConfig["project"]["theme"];
 
 type CoreApi = {
   version: string;
-  config?: { publicKey: string };
+  config?: { publicKey: string; apiUrl: string };
   boot?: WidgetConfig;
   start?: () => void;
   stop?: () => void;
@@ -85,10 +86,8 @@ export async function start(target: Window = window): Promise<void> {
     stop();
 
     const doc = target.document;
-    const progress = createProgressStore(
-      api?.config?.publicKey ?? "unknown",
-      openStorage(target),
-    );
+    const storage = openStorage(target);
+    const progress = createProgressStore(api?.config?.publicKey ?? "unknown", storage);
     if (!progress.persistent) {
       // Тур покажется ещё раз — деградация, а не поломка (§3.3 docs/idea.md).
       report("storage_unavailable", "прогресс живёт до перезагрузки страницы");
@@ -99,6 +98,16 @@ export async function start(target: Window = window): Promise<void> {
       console.debug("[OnBoard] тур уже пройден и показывается один раз");
       return;
     }
+
+    const analytics = createAnalytics({
+      view: target,
+      apiUrl: api?.config?.apiUrl ?? "",
+      publicKey: api?.config?.publicKey ?? "unknown",
+      storage,
+    });
+    // С этого момента ошибки уходят не только в консоль: своей консоли
+    // у нас на чужом сайте нет (§7.1 docs/vision.md).
+    setErrorSink((code) => analytics.track({ type: "widget_error", error_code: code }));
 
     const theme = themeOf(boot.project.theme);
     const resolver = createResolver(doc);
@@ -130,6 +139,7 @@ export async function start(target: Window = window): Promise<void> {
         tooltip,
         watcher,
         progress,
+        analytics,
         view: target,
         onFinish: (reason) => {
           // Тур закончился сам: убираем всё, что показывали.
@@ -141,6 +151,9 @@ export async function start(target: Window = window): Promise<void> {
 
     active = {
       stop: () => {
+        setErrorSink(null);
+        // Последние события уходят до того, как исчезнет хост.
+        analytics.stop();
         engine.stop();
         watcher.stop();
         tooltip.stop();

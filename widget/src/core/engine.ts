@@ -5,6 +5,8 @@
  * за геометрией — поэтому переходы проверяются без браузера.
  */
 
+import type { TrackedEvent } from "./analytics";
+import { uuid } from "./id";
 import type { Overlay } from "./overlay";
 import type { ProgressStore, TourProgress } from "./progress";
 import type { Resolver } from "./resolver";
@@ -46,6 +48,8 @@ export type EngineDeps = {
   tooltip: Tooltip;
   watcher: Watcher;
   progress: ProgressStore;
+  /** Куда уходят события прохождения. Узкий интерфейс — движку хватает `track`. */
+  analytics: { track: (event: TrackedEvent) => void };
   /** Окно страницы клиента: нужно, чтобы понять, видна ли цель. */
   view: Window;
   /** Снять хост и освободить ресурсы: это дело ядра, а не движка. */
@@ -96,9 +100,16 @@ export function createEngine(tour: EngineTour, deps: EngineDeps): Engine {
   let stopped = false;
   let busy = false;
   let element: Element | null = null;
+  // Один прогон тура — один `run_id`: по нему считается вся воронка
+  // (§7.1 docs/vision.md).
+  let runId = "";
 
   function save(done: boolean): void {
     deps.progress.write(tour.id, { step: index, done });
+  }
+
+  function track(type: string, extra: Partial<TrackedEvent> = {}): void {
+    deps.analytics.track({ type, tour_id: tour.id, run_id: runId, ...extra });
   }
 
   function finish(reason: FinishReason): void {
@@ -110,6 +121,15 @@ export function createEngine(tour: EngineTour, deps: EngineDeps): Engine {
     // тур не помечается пройденным, чтобы показаться снова, когда вёрстку
     // починят (§3.3 docs/idea.md).
     save(reason !== "target_missing");
+    const step = tour.steps[index];
+    if (reason !== "target_missing") {
+      // Сломавшийся тур — не решение посетителя: засчитать его пропуском
+      // значит исказить воронку. О поломке уже ушло `step_target_missing`.
+      track(reason === "completed" ? "tour_completed" : "tour_skipped", {
+        step_id: step?.id,
+        step_position: step ? index : undefined,
+      });
+    }
     deps.onFinish(reason);
   }
 
@@ -137,6 +157,9 @@ export function createEngine(tour: EngineTour, deps: EngineDeps): Engine {
     if (resolution.status !== "found") {
       // Пустая подсказка без подсветки хуже, чем закрытый тур.
       console.debug("[OnBoard] цель шага не найдена:", step.selector, resolution.reason);
+      // Отдельное событие, а не ошибка: владельцу сайта это сообщение
+      // про его вёрстку, и в панели оно попадает в «Проблемы» (T4.4).
+      track("step_target_missing", { step_id: step.id, step_position: index });
       finish("target_missing");
       return;
     }
@@ -147,10 +170,15 @@ export function createEngine(tour: EngineTour, deps: EngineDeps): Engine {
     deps.tooltip.show(step, element, { index, total: tour.steps.length });
     deps.watcher.watch(element);
     save(false);
+    track("step_viewed", { step_id: step.id, step_position: index });
   }
 
   return {
-    start: (from = 0) => go(from),
+    start: (from = 0) => {
+      runId = uuid(deps.view);
+      track("tour_started");
+      return go(from);
+    },
 
     next: async () => {
       const next = index + 1;
@@ -161,7 +189,10 @@ export function createEngine(tour: EngineTour, deps: EngineDeps): Engine {
       await go(next);
     },
 
-    back: () => go(Math.max(index - 1, 0)),
+    back: () => {
+      track("step_back", { step_id: tour.steps[index]?.id, step_position: index });
+      return go(Math.max(index - 1, 0));
+    },
 
     current: () => element,
 

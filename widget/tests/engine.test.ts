@@ -37,6 +37,7 @@ function setup(
   });
   const progress = createProgressStore("pk_тест", null);
   const finished: FinishReason[] = [];
+  const tracked: { type: string; step_position?: number }[] = [];
   const deps: EngineDeps = {
     resolver: resolver
       ? { resolve: vi.fn(resolver.resolve), stop: vi.fn() }
@@ -48,10 +49,11 @@ function setup(
     tooltip: { show: vi.fn(), reposition: vi.fn(), stop: vi.fn() },
     watcher: { watch: vi.fn(), stop: vi.fn() },
     progress,
+    analytics: { track: (event) => void tracked.push(event) },
     view: window,
     onFinish: (reason) => finished.push(reason),
   };
-  return { engine: createEngine(tour, deps), deps, progress, finished };
+  return { engine: createEngine(tour, deps), deps, progress, finished, tracked };
 }
 
 function shownIndexes(deps: EngineDeps): number[] {
@@ -249,5 +251,70 @@ describe("с какого шага показывать", () => {
 
   it("тур без шагов не показывается", () => {
     expect(resumeIndex(tourWith(0), null)).toBeNull();
+  });
+});
+
+describe("события прохождения", () => {
+  it("весь проход описывается событиями воронки", async () => {
+    const { engine, tracked } = setup(tourWith(2));
+
+    await engine.start();
+    await engine.next();
+    await engine.next();
+
+    // По этим событиям в панели считается воронка (§7.2 docs/vision.md).
+    expect(tracked.map((event) => event.type)).toEqual([
+      "tour_started",
+      "step_viewed",
+      "step_viewed",
+      "tour_completed",
+    ]);
+  });
+
+  it("у всех событий одного прохода общий run_id", async () => {
+    const { engine, tracked } = setup(tourWith(2));
+
+    await engine.start();
+    await engine.next();
+
+    const runs = new Set(tracked.map((event) => (event as { run_id?: string }).run_id));
+    expect(runs.size).toBe(1);
+    expect([...runs][0]).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it("шаг, на котором бросили тур, виден в событии", async () => {
+    const { engine, tracked } = setup(tourWith(3));
+
+    await engine.start();
+    await engine.next();
+    engine.skip();
+
+    const skipped = tracked.find((event) => event.type === "tour_skipped");
+    expect(skipped?.step_position).toBe(1);
+  });
+
+  it("«Назад» тоже событие: по нему видно, где непонятно", async () => {
+    const { engine, tracked } = setup(tourWith(3));
+
+    await engine.start();
+    await engine.next();
+    await engine.back();
+
+    expect(tracked.filter((event) => event.type === "step_back")).toHaveLength(1);
+  });
+
+  it("ненайденная цель уходит событием, а не только в консоль", async () => {
+    const debug = vi.spyOn(console, "debug").mockImplementation(() => {});
+    const { engine, tracked } = setup(tourWith(2), () => ({
+      status: "missing",
+      reason: "not_found",
+    }));
+
+    await engine.start();
+
+    // Владельцу сайта это сообщение про его вёрстку: в панели оно попадёт
+    // в блок «Проблемы» (T4.4).
+    expect(tracked.map((event) => event.type)).toEqual(["tour_started", "step_target_missing"]);
+    debug.mockRestore();
   });
 });
