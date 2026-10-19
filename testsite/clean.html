@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Чистая страница — стенд OnBoard</title>
+    <link rel="stylesheet" href="/styles/hostile.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <strong data-testid="brand">Отчётница</strong>
+      <button type="button" id="filters" data-testid="filters-button">Фильтры</button>
+    </header>
+
+    <main class="layout">
+      <div class="card">
+        <h1>Страница без виджета</h1>
+        <p>
+          Здесь намеренно нет тега OnBoard: страница нужна тем проверкам, которые
+          вставляют сниппет сами — с ключом только что созданного проекта. На остальных
+          страницах стенда тег уже стоит, и второй виджет на них не запустится, потому
+          что <code>window.OnBoard</code> уже занят (инвариант №3).
+        </p>
+        <p class="muted">Это автоматический вид пункта приёмки A1: один тег на чистой странице.</p>
+      </div>
+    </main>
+  </body>
+</html>
