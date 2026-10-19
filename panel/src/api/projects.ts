@@ -34,3 +34,19 @@ export function createProject(name: string): Promise<Project> {
 export function deleteProject(id: string): Promise<void> {
   return request<void>(`/projects/${id}`, { method: "DELETE" });
 }
+
+export function getProject(id: string, signal?: AbortSignal): Promise<Project> {
+  return request<Project>(`/projects/${id}`, { signal });
+}
+
+export async function getSnippet(id: string, signal?: AbortSignal): Promise<string> {
+  const response = await request<{ snippet: string }>(`/projects/${id}/snippet`, { signal });
+  return response.snippet;
+}
+
+export function setAllowedOrigins(id: string, origins: string[]): Promise<Project> {
+  return request<Project>(`/projects/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ allowed_origins: origins }),
+  });
+}

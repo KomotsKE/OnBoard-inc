@@ -68,12 +68,12 @@ test("создание двух проектов, переключение ко�
   await removeProject(page, second);
 });
 
-test("карточка проекта показывает статус виджета и число туров", async ({ page }) => {
+test("карточка проекта показывает число туров", async ({ page }) => {
   await signIn(page);
 
-  // Демо-проект стенда: виджет на нём уже был, туров три (см. make seed).
+  // Демо-проект стенда: три тура (см. make seed). Статус подключения виджета
+  // проверяется там, где он меняется, — в сценарии экрана установки.
   const card = page.locator('[data-testid="project-card"]').filter({ hasText: "Отчётница" });
 
-  await expect(card).toContainText("Виджет подключён");
   await expect(card).toContainText("3 тура");
 });

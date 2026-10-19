@@ -5,10 +5,20 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { createProject, deleteProject, listProjects, type Project } from "../api/projects";
+import {
+  createProject,
+  deleteProject,
+  getProject,
+  getSnippet,
+  listProjects,
+  setAllowedOrigins,
+  type Project,
+} from "../api/projects";
 
-/** Ключ из контракта экранов (S4 docs/screens.md). */
+/** Ключи из контракта экранов (S4, S5 docs/screens.md): от общего к частному. */
 export const projectsKey = ["projects"] as const;
+export const projectKey = (id: string) => ["project", id] as const;
+export const snippetKey = (id: string) => ["snippet", id] as const;
 
 export function useProjects() {
   // Сигнал отмены передаётся дальше в fetch: иначе отменить запрос нечем.
@@ -48,5 +58,35 @@ export function useDeleteProject() {
   return useMutation({
     mutationFn: deleteProject,
     onSuccess: () => refreshProjects(queryClient),
+  });
+}
+
+export function useProject(id: string) {
+  return useQuery<Project>({
+    queryKey: projectKey(id),
+    queryFn: ({ signal }) => getProject(id, signal),
+  });
+}
+
+export function useSnippet(id: string) {
+  return useQuery<string>({
+    queryKey: snippetKey(id),
+    // Сниппет меняется только вместе с адресами сервиса, то есть при переезде:
+    // перечитывать его на каждом открытии экрана незачем.
+    staleTime: 10 * 60 * 1000,
+    queryFn: ({ signal }) => getSnippet(id, signal),
+  });
+}
+
+export function useAllowedOrigins(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (origins: string[]) => setAllowedOrigins(id, origins),
+    onSuccess: async (project) => {
+      // Ответ PATCH — это уже новое состояние проекта: кладём его в кэш,
+      // чтобы экран не моргал, и отдельно освежаем список.
+      queryClient.setQueryData(projectKey(id), project);
+      await refreshProjects(queryClient);
+    },
   });
 }

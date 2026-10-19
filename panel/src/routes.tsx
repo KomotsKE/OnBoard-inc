@@ -3,12 +3,12 @@ import { Navigate, type RouteObject } from "react-router-dom";
 import { AppLayout } from "./components/AppLayout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LoginPage } from "./pages/LoginPage";
+import { InstallPage } from "./pages/InstallPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import {
   AnalyticsPage,
   BrandingPage,
-  InstallPage,
   NotFoundPage,
   TourBuilderPage,
   ToursPage,
