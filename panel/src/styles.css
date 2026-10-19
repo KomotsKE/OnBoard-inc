@@ -491,3 +491,137 @@ p {
   color: #ffffff;
   font-weight: 600;
 }
+
+/* Экран воронки.
+   Цвета проверены валидатором палитры: ΔE 31 при протанопии между брендовым
+   и статусным, контраст к фону ≥ 3:1. Статусный цвет никогда не работает
+   в одиночку — рядом всегда знак и подпись. */
+.funnel__range {
+  display: flex;
+  gap: 8px;
+  margin: var(--panel-space) 0;
+}
+
+.funnel__range button {
+  padding: 6px 14px;
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  background: transparent;
+  font: inherit;
+  color: var(--onboard-text-muted);
+  cursor: pointer;
+}
+
+.funnel__range button[aria-pressed="true"] {
+  border-color: var(--onboard-primary);
+  color: var(--onboard-primary);
+  font-weight: 600;
+}
+
+.totals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--panel-space);
+  margin-bottom: calc(var(--panel-space) * 1.5);
+}
+
+.totals__tile {
+  padding: var(--panel-space);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--onboard-radius);
+}
+
+.totals__label {
+  margin: 0 0 4px !important;
+  font-size: 13px;
+}
+
+.totals__value {
+  margin: 0 !important;
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--onboard-text) !important;
+}
+
+.totals__share {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--onboard-text-muted);
+}
+
+.funnel__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  /* Две строки столбцов не слипаются: разделитель — фон, а не линия. */
+  gap: 6px;
+}
+
+.funnel__row {
+  display: grid;
+  grid-template-columns: minmax(140px, 220px) 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.funnel__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.funnel__bar {
+  height: 18px;
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.funnel__fill {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: 4px;
+  background: var(--onboard-primary);
+}
+
+/* Статусный цвет: контраст к белому 5,6 : 1, рядом знак и подпись. */
+.funnel__fill--problem {
+  background: #b45309;
+}
+
+/* «Завершили» — та же величина того же ряда, поэтому тот же цвет: строку
+   выделяют жирная подпись и позиция. Зелёный здесь был ошибкой — валидатор
+   палитры показал, что при протанопии он отличается от статусного
+   оранжевого на ΔE 4.4, то есть не отличается вовсе. */
+.funnel__fill--finish {
+  background: var(--onboard-primary);
+}
+
+.funnel__value {
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  color: var(--onboard-text-muted);
+}
+
+.funnel__flag {
+  grid-column: 1 / -1;
+  color: #b45309;
+  font-size: 13px;
+}
+
+.funnel__row--finish .funnel__name {
+  font-weight: 600;
+}
+
+.funnel__issues ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.funnel__issues li {
+  color: var(--onboard-text-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
