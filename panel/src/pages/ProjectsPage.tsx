@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import type { Project } from "../api/projects";
 import { useCreateProject, useDeleteProject, useProjects } from "../hooks/useProjects";
+import { Empty, ErrorState, Loading } from "../components/States";
 import { plural } from "../text";
 
 /**
@@ -17,18 +18,10 @@ export function ProjectsPage() {
   const [name, setName] = useState("");
 
   if (isPending) {
-    return <p>Загружаем проекты…</p>;
+    return <Loading what="проекты" />;
   }
-
   if (isError) {
-    return (
-      <section>
-        <p role="alert">Не удалось загрузить проекты.</p>
-        <button type="button" onClick={() => void refetch()}>
-          Повторить
-        </button>
-      </section>
-    );
+    return <ErrorState what="проекты" onRetry={() => void refetch()} />;
   }
 
   return (
@@ -63,9 +56,9 @@ export function ProjectsPage() {
       </form>
 
       {projects.length === 0 ? (
-        <p data-testid="projects-empty">
+        <Empty testId="projects-empty">
           Проектов пока нет. Создайте первый — это сайт, на котором будет работать виджет.
-        </p>
+        </Empty>
       ) : (
         <ul className="projects">
           {projects.map((project) => (

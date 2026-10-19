@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import type { Project } from "../api/projects";
+import { ErrorState, Loading } from "../components/States";
 import { TooltipPreview } from "../components/TooltipPreview";
 import { useProject } from "../hooks/useProjects";
 import { useUpdateTheme } from "../hooks/useTheme";
@@ -31,17 +32,10 @@ export function BrandingPage() {
   const [draft, setDraft] = useState<Project["theme"] | null>(null);
 
   if (project.isPending) {
-    return <p>Загружаем оформление…</p>;
+    return <Loading what="оформление" />;
   }
   if (project.isError) {
-    return (
-      <section>
-        <p role="alert">Не удалось загрузить проект.</p>
-        <button type="button" onClick={() => void project.refetch()}>
-          Повторить
-        </button>
-      </section>
-    );
+    return <ErrorState what="оформление" onRetry={() => void project.refetch()} />;
   }
 
   const theme = draft ?? project.data.theme;

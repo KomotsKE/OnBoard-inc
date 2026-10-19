@@ -52,6 +52,14 @@ repos:
         files: ^docs/tasklist\.md$
         pass_filenames: false
 
+      # Документ, советующий несуществующую команду, хуже отсутствующего.
+      - id: docs-commands
+        name: команды в документации существуют
+        entry: python3 scripts/check-docs.py
+        language: system
+        files: ^(Makefile|CLAUDE\.md|README\.md|docs/.*\.md|[^/]+/README\.md)$
+        pass_filenames: false
+
   # Python: линтер и форматтер бэкенда
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Версия совпадает с backend/pyproject.toml: иначе хук и `make lint`

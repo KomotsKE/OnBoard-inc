@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 
 import { ApiError } from "../api/client";
+import { ErrorState, Loading } from "../components/States";
 import { useAllowedOrigins, useProject, useSnippet } from "../hooks/useProjects";
 
 /**
@@ -18,17 +19,10 @@ export function InstallPage() {
   const snippet = useSnippet(projectId);
 
   if (project.isPending) {
-    return <p>Загружаем проект…</p>;
+    return <Loading what="проект" />;
   }
   if (project.isError) {
-    return (
-      <section>
-        <p role="alert">Не удалось загрузить проект.</p>
-        <button type="button" onClick={() => void project.refetch()}>
-          Повторить
-        </button>
-      </section>
-    );
+    return <ErrorState what="проект" onRetry={() => void project.refetch()} />;
   }
 
   return (

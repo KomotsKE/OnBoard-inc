@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 
 import type { TourListItem, UrlMatch } from "../api/tours";
 import { useCreateTour, useDeleteTour, useTourPublication, useTours } from "../hooks/useTours";
+import { Empty, ErrorState, Loading } from "../components/States";
 import { plural } from "../text";
 
 /**
@@ -19,17 +20,10 @@ export function ToursPage() {
   const [name, setName] = useState("");
 
   if (tours.isPending) {
-    return <p>Загружаем туры…</p>;
+    return <Loading what="туры" />;
   }
   if (tours.isError) {
-    return (
-      <section>
-        <p role="alert">Не удалось загрузить туры.</p>
-        <button type="button" onClick={() => void tours.refetch()}>
-          Повторить
-        </button>
-      </section>
-    );
+    return <ErrorState what="туры" onRetry={() => void tours.refetch()} />;
   }
 
   return (
@@ -64,10 +58,10 @@ export function ToursPage() {
       </form>
 
       {tours.data.length === 0 ? (
-        <p data-testid="tours-empty">
+        <Empty testId="tours-empty">
           Туров пока нет. Создайте первый — дальше в конструкторе добавите шаги и условие
           показа.
-        </p>
+        </Empty>
       ) : (
         <ul className="projects">
           {tours.data.map((tour) => (

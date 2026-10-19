@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import type { AnalyticsRange, FunnelStep, Issue, TourAnalytics } from "../api/analytics";
+import { Empty, ErrorState, Loading } from "../components/States";
 import { useAnalytics } from "../hooks/useAnalytics";
 import { useTour } from "../hooks/useTour";
 import { plural } from "../text";
@@ -21,17 +22,10 @@ export function AnalyticsPage() {
   const analytics = useAnalytics(tourId, range);
 
   if (analytics.isPending) {
-    return <p>Считаем воронку…</p>;
+    return <Loading what="воронку" />;
   }
   if (analytics.isError) {
-    return (
-      <section>
-        <p role="alert">Не удалось посчитать воронку.</p>
-        <button type="button" onClick={() => void analytics.refetch()}>
-          Повторить
-        </button>
-      </section>
-    );
+    return <ErrorState what="воронку" onRetry={() => void analytics.refetch()} />;
   }
 
   return (
@@ -56,7 +50,7 @@ export function AnalyticsPage() {
       </div>
 
       {analytics.data.totals.runs === 0 ? (
-        <Empty />
+        <NoRuns />
       ) : (
         <>
           <Totals data={analytics.data} />
@@ -68,12 +62,12 @@ export function AnalyticsPage() {
   );
 }
 
-function Empty() {
+function NoRuns() {
   return (
-    <p data-testid="funnel-empty">
+    <Empty testId="funnel-empty">
       Тур ещё не запускали. Проверьте, что он опубликован, а условие показа совпадает
       с адресом страницы — и что виджет установлен на сайте.
-    </p>
+    </Empty>
   );
 }
 

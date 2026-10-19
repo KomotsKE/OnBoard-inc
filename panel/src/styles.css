@@ -643,3 +643,18 @@ p {
   font-size: 14px;
   font-weight: 600;
 }
+
+/* Общие состояния экранов */
+.state {
+  color: var(--onboard-text-muted);
+}
+
+.state button {
+  margin-top: 10px;
+  padding: 8px 14px;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--onboard-radius);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}

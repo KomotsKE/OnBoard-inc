@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import type { StepDraft, UrlMatch } from "../api/tours";
+import { Empty, ErrorState, Loading } from "../components/States";
 import { StepForm } from "../components/StepForm";
 import { useProject } from "../hooks/useProjects";
 import { StepList } from "../components/StepList";
@@ -30,17 +31,10 @@ export function TourBuilderPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   if (tour.isPending) {
-    return <p>Загружаем тур…</p>;
+    return <Loading what="тур" />;
   }
   if (tour.isError) {
-    return (
-      <section>
-        <p role="alert">Не удалось загрузить тур.</p>
-        <button type="button" onClick={() => void tour.refetch()}>
-          Повторить
-        </button>
-      </section>
-    );
+    return <ErrorState what="тур" onRetry={() => void tour.refetch()} />;
   }
 
   const steps = tour.data.steps;
@@ -73,9 +67,9 @@ export function TourBuilderPage() {
         <div>
           <h2>Шаги</h2>
           {steps.length === 0 ? (
-            <p data-testid="steps-empty">
+            <Empty testId="steps-empty">
               Шагов пока нет. Добавьте первый — укажите селектор элемента и текст подсказки.
-            </p>
+            </Empty>
           ) : (
             <StepList
               steps={steps}
