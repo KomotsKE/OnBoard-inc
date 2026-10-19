@@ -14,8 +14,6 @@ function Placeholder({ title, task }: Props) {
   );
 }
 
-export const LoginPage = () => <Placeholder title="Вход" task="T3.1" />;
-export const RegisterPage = () => <Placeholder title="Регистрация" task="T3.1" />;
 export const ProjectsPage = () => <Placeholder title="Проекты" task="T3.2" />;
 export const InstallPage = () => <Placeholder title="Установка виджета" task="T3.3" />;
 export const ToursPage = () => <Placeholder title="Туры" task="T3.4" />;

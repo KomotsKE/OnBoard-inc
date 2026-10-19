@@ -16,8 +16,21 @@ export default defineConfig({
   forbidOnly: true,
   reporter: "list",
   use: {
-    baseURL: "http://localhost:8080",
     trace: "retain-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  // Две цели с разными адресами: виджет живёт на стенде, панель — на своём
+  // dev-сервере. Один общий baseURL заставил бы половину тестов писать
+  // абсолютные адреса.
+  projects: [
+    {
+      name: "widget",
+      testMatch: /tests\/widget\/.*\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], baseURL: "http://localhost:8080" },
+    },
+    {
+      name: "panel",
+      testMatch: /tests\/panel\/.*\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], baseURL: "http://localhost:5173" },
+    },
+  ],
 });

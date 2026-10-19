@@ -46,3 +46,79 @@ p {
   color: var(--onboard-text-muted);
   line-height: 1.5;
 }
+
+/* Экраны входа и регистрации */
+.auth {
+  max-width: 360px;
+  margin: calc(var(--panel-space) * 4) auto;
+  padding: 0 var(--panel-space);
+}
+
+.auth form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth label {
+  margin-top: var(--panel-space);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.auth input {
+  padding: 10px 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--onboard-radius);
+  font: inherit;
+}
+
+.auth input:focus-visible {
+  outline: 2px solid var(--onboard-primary);
+  outline-offset: 1px;
+}
+
+.auth__hint {
+  margin: 0;
+  font-size: 13px;
+}
+
+/* #B91C1C на белом — 6,8 : 1 по WCAG 2.2. */
+.auth__error {
+  margin: var(--panel-space) 0 0;
+  color: #b91c1c;
+}
+
+.auth button[type="submit"] {
+  margin-top: calc(var(--panel-space) * 1.5);
+  padding: 10px 16px;
+  border: 0;
+  border-radius: var(--onboard-radius);
+  background: var(--onboard-primary);
+  color: #ffffff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* Шапка: почта владельца прижата вправо, рядом выход */
+.layout__owner {
+  margin-left: auto;
+  color: var(--onboard-text-muted);
+  font-size: 14px;
+}
+
+.layout__logout {
+  padding: 6px 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--onboard-radius);
+  background: transparent;
+  font: inherit;
+  color: var(--onboard-text-muted);
+  cursor: pointer;
+}
