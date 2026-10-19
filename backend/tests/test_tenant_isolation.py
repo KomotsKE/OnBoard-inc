@@ -26,6 +26,7 @@ BODIES: dict[tuple[str, str], dict | None] = {
     ("DELETE", "/v1/projects/{project_id}"): None,
     ("GET", "/v1/projects/{project_id}/snippet"): None,
     ("GET", "/v1/tours/{tour_id}"): None,
+    ("GET", "/v1/tours/{tour_id}/analytics"): None,
     ("PATCH", "/v1/tours/{tour_id}"): {"name": "Чужое"},
     ("DELETE", "/v1/tours/{tour_id}"): None,
     ("POST", "/v1/tours/{tour_id}/publish"): None,

@@ -4,13 +4,17 @@
 проекта, и принадлежность тура этому проекту (ADR-0006).
 """
 
-from fastapi import APIRouter, status
+from typing import Annotated
+
+from fastapi import APIRouter, Query, status
 
 from app.core.deps import OwnedProject, OwnedTour, PanelSession
 from app.core.logging import log_event
 from app.models import Tour
+from app.schemas.analytics import Range, TourAnalytics
 from app.schemas.projects import Page
 from app.schemas.tours import StepRead, TourCreate, TourListItem, TourRead, TourUpdate, UrlMatch
+from app.services import analytics as analytics_service
 from app.services import tours as service
 
 router = APIRouter(tags=["tours"])
@@ -119,3 +123,13 @@ async def unpublish_tour(tour: OwnedTour, session: PanelSession) -> TourRead:
     draft = await service.unpublish(session, tour)
     log_event("tour.unpublished", tour_id=str(draft.id), previous_status=previous)
     return _read(draft)
+
+
+@router.get("/v1/tours/{tour_id}/analytics", response_model=TourAnalytics)
+async def tour_analytics(
+    tour: OwnedTour,
+    session: PanelSession,
+    range: Annotated[Range, Query()] = "7d",
+) -> TourAnalytics:
+    """Воронка тура за скользящее окно (§7.2 docs/vision.md)."""
+    return await analytics_service.tour_analytics(session, tour, range)
