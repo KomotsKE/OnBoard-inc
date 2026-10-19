@@ -122,3 +122,100 @@ p {
   color: var(--onboard-text-muted);
   cursor: pointer;
 }
+
+/* Список проектов */
+.projects {
+  list-style: none;
+  margin: calc(var(--panel-space) * 1.5) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--panel-space);
+}
+
+.projects__card {
+  padding: var(--panel-space);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--onboard-radius);
+}
+
+.projects__card h2 {
+  margin: 0 0 4px;
+  font-size: 17px;
+}
+
+.projects__card p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.projects__links {
+  display: flex;
+  align-items: center;
+  gap: var(--panel-space);
+  margin-top: 10px !important;
+}
+
+.projects__new {
+  margin-top: var(--panel-space);
+}
+
+.projects__new label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.projects__new-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.projects__new-row input {
+  flex: 1 1 240px;
+  padding: 8px 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--onboard-radius);
+  font: inherit;
+}
+
+.projects__new-row button,
+.projects__delete {
+  padding: 8px 14px;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--onboard-radius);
+  background: transparent;
+  font: inherit;
+  color: var(--onboard-text-muted);
+  cursor: pointer;
+}
+
+.projects__new-row button[type="submit"] {
+  border-color: var(--onboard-primary);
+  background: var(--onboard-primary);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.projects__new-row button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.projects__confirm {
+  margin-top: var(--panel-space);
+  padding: var(--panel-space);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--onboard-radius);
+  background: #fef2f2;
+}
+
+.layout__switcher {
+  padding: 6px 10px;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--onboard-radius);
+  font: inherit;
+  color: var(--onboard-text);
+  background: transparent;
+}

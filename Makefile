@@ -51,10 +51,15 @@ lint: ## ruff + tsc панели и виджета
 	docker compose run --rm --no-deps panel npm run typecheck
 	docker compose run --rm --no-deps widget npm run typecheck
 
-e2e: up seed ## Playwright против стенда (поднимает стек и демо-данные)
+e2e: up ## Playwright против стенда и панели (поднимает стек и демо-данные)
+	# Код бэкенда смонтирован, но uvicorn его не перечитывает: без перезапуска
+	# сценарии проверяли бы прошлую версию API. Заодно сбрасываются счётчики
+	# лимитов, которые копятся от прогона к прогону.
+	docker compose restart api
 	# Бандлы пересобираются явно: сервис widget одноразовый, и после правок
 	# в src стенд иначе отдаёт прошлую сборку, а сценарии падают не по делу.
 	docker compose run --rm --no-deps widget npm run build
+	$(MAKE) seed
 	cd e2e && npm install --no-audit --no-fund && npx playwright test
 
 size: ## бюджет размера бандлов виджета
