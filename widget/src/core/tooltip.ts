@@ -7,6 +7,8 @@
  * проверяются без браузера и без вёрстки.
  */
 
+import { guard } from "./guard";
+
 export type Side = "top" | "bottom" | "left" | "right";
 export type Placement = Side | "auto";
 
@@ -172,19 +174,19 @@ export function createTooltip(
   back.className = "tip__button tip__button--ghost";
   back.dataset.part = "back";
   back.textContent = "Назад";
-  back.addEventListener("click", () => handlers.onBack());
+  back.addEventListener("click", guard("unexpected", () => handlers.onBack()));
 
   const skip = doc.createElement("button");
   skip.type = "button";
   skip.className = "tip__button tip__button--ghost";
   skip.dataset.part = "skip";
-  skip.addEventListener("click", () => handlers.onSkip());
+  skip.addEventListener("click", guard("unexpected", () => handlers.onSkip()));
 
   const next = doc.createElement("button");
   next.type = "button";
   next.className = "tip__button tip__button--primary";
   next.dataset.part = "next";
-  next.addEventListener("click", () => handlers.onNext());
+  next.addEventListener("click", guard("unexpected", () => handlers.onNext()));
 
   const footer = doc.createElement("div");
   footer.className = "tip__footer";
@@ -252,8 +254,11 @@ export function createTooltip(
     }
   }
 
-  tip.addEventListener("keydown", onTipKeydown);
-  doc.addEventListener("keydown", onDocumentKeydown, true);
+  // Слушатели ставятся обёрнутыми, и снимаются те же обёртки.
+  const tipKeydown = guard("unexpected", onTipKeydown);
+  const documentKeydown = guard("unexpected", onDocumentKeydown);
+  tip.addEventListener("keydown", tipKeydown);
+  doc.addEventListener("keydown", documentKeydown, true);
 
   function drawDots(index: number, total: number): void {
     dots.textContent = "";
@@ -324,8 +329,8 @@ export function createTooltip(
 
     stop(): void {
       target = null;
-      tip.removeEventListener("keydown", onTipKeydown);
-      doc.removeEventListener("keydown", onDocumentKeydown, true);
+      tip.removeEventListener("keydown", tipKeydown);
+      doc.removeEventListener("keydown", documentKeydown, true);
       tip.remove();
       // Возвращаем фокус туда, где он был до тура: иначе посетитель
       // продолжает с начала страницы.

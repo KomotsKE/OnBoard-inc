@@ -8,6 +8,8 @@
  * возможных ответов и для посетителя, и для владельца сайта.
  */
 
+import { guard } from "./guard";
+
 /** Предел ожидания элемента — §9.1 docs/vision.md. */
 export const WAIT_TIMEOUT_MS = 10_000;
 
@@ -112,19 +114,24 @@ export function createResolver(root: Document = document): Resolver {
       // Один querySelectorAll на пачку изменений. Наблюдаем и за появлением
       // узлов, и за атрибутами: элемент часто уже есть в разметке и лишь скрыт
       // классом или [hidden], и тогда «появление» — это смена атрибута.
-      const observer = new MutationObserver(() => {
-        const element = findVisible(root, selector);
-        if (element) {
-          finish({ status: "found", element });
-        }
-      });
+      const observer = new MutationObserver(
+        guard("unexpected", () => {
+          const element = findVisible(root, selector);
+          if (element) {
+            finish({ status: "found", element });
+          }
+        }),
+      );
 
-      const timer = setTimeout(() => {
-        // Различаем «ничего не нашлось» и «нашлось, но скрыто»: для владельца
-        // сайта это две разные причины и два разных исправления.
-        const reason: MissingReason = root.querySelector(selector) ? "hidden" : "not_found";
-        finish({ status: "missing", reason });
-      }, timeoutMs);
+      const timer = setTimeout(
+        guard("target_timeout", () => {
+          // Различаем «ничего не нашлось» и «нашлось, но скрыто»: для владельца
+          // сайта это две разные причины и два разных исправления.
+          const reason: MissingReason = root.querySelector(selector) ? "hidden" : "not_found";
+          finish({ status: "missing", reason });
+        }),
+        timeoutMs,
+      );
 
       cancel = () => finish({ status: "missing", reason: "cancelled" });
 

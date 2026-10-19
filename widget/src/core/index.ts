@@ -13,6 +13,7 @@
 // только типов: в бандл ядра код загрузчика не попадает.
 import type { WidgetConfig } from "../loader/index";
 import { createEngine, type EngineTour, resumeIndex } from "./engine";
+import { guard, report } from "./guard";
 import { createHost, type WidgetTheme } from "./host";
 import { createOverlay } from "./overlay";
 import { createProgressStore, openStorage } from "./progress";
@@ -90,8 +91,7 @@ export async function start(target: Window = window): Promise<void> {
     );
     if (!progress.persistent) {
       // Тур покажется ещё раз — деградация, а не поломка (§3.3 docs/idea.md).
-      // Код `storage_unavailable` уедет событием в T4.1.
-      console.debug("[OnBoard] localStorage недоступен: прогресс живёт до перезагрузки");
+      report("storage_unavailable", "прогресс живёт до перезагрузки страницы");
     }
 
     const from = resumeIndex(tour, progress.read(tour.id));
@@ -152,7 +152,7 @@ export async function start(target: Window = window): Promise<void> {
 
     await engine.start(from);
   } catch (error) {
-    console.debug("[OnBoard] ядро остановлено", error);
+    report("render_failed", error);
     stop();
   }
 }
@@ -164,9 +164,10 @@ function install(target: Window = window): void {
     // нельзя ни при каких входных данных (инвариант №1).
     return;
   }
-  api.start = () => void start(target);
-  api.stop = stop;
+  // Публичная поверхность: её зовёт чужой код, поэтому она тоже в контуре.
+  api.start = guard("unexpected", () => void start(target));
+  api.stop = guard("unexpected", stop);
   void start(target);
 }
 
-install();
+guard("unexpected", install)();

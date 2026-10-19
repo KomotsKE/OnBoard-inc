@@ -7,6 +7,8 @@
  * (§6 docs/conventions.md).
  */
 
+import { guard } from "./guard";
+
 export type Watcher = {
   /** Начать следить за элементом; прежний отпускается. */
   watch: (element: Element) => void;
@@ -18,14 +20,18 @@ export function createWatcher(doc: Document, onChange: () => void): Watcher {
   let frame: number | null = null;
 
   /** Пересчёт не чаще кадра: scroll и ResizeObserver приходят пачками. */
+  // Пересчёт идёт в кадре, то есть вне нашего стека: исключение здесь улетело
+  // бы в необработанные ошибки страницы клиента.
+  const redraw = guard("render_failed", () => {
+    frame = null;
+    onChange();
+  });
+
   function schedule(): void {
     if (frame !== null) {
       return;
     }
-    frame = requestAnimationFrame(() => {
-      frame = null;
-      onChange();
-    });
+    frame = requestAnimationFrame(redraw);
   }
 
   // capture: true — события scroll не всплывают, но в фазе погружения доходят

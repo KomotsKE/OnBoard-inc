@@ -10,6 +10,8 @@
  * сайте — инцидент у клиента (инвариант №1).
  */
 
+import { guard, report } from "../core/guard";
+
 const GLOBAL = "OnBoard";
 const VERSION = "0.1.0";
 
@@ -101,12 +103,13 @@ export async function fetchConfig(
       mode: "cors",
     });
     if (!response.ok) {
-      console.debug("[OnBoard] конфиг не получен, код", response.status);
+      report("config_fetch_failed", response.status);
       return null;
     }
     return (await response.json()) as WidgetConfig;
   } catch (error) {
-    console.debug("[OnBoard] конфиг недоступен", error);
+    // Повтора в этой загрузке страницы нет — см. комментарий у таймаута.
+    report("config_fetch_failed", error);
     return null;
   } finally {
     clearTimeout(timer);
@@ -138,16 +141,21 @@ export function watchUrl(target: Window, onChange: () => void): () => void {
   const originals: Partial<Record<HistoryMethod, History["pushState"]>> = {};
   let scheduled = false;
 
-  function schedule(): void {
+  // Эта функция вызывается изнутри `pushState` сайта: исключение здесь
+  // оборвало бы его навигацию.
+  const schedule = guard("unexpected", () => {
     if (scheduled) {
       return;
     }
     scheduled = true;
-    target.setTimeout(() => {
-      scheduled = false;
-      onChange();
-    }, 0);
-  }
+    target.setTimeout(
+      guard("unexpected", () => {
+        scheduled = false;
+        onChange();
+      }),
+      0,
+    );
+  });
 
   for (const name of ["pushState", "replaceState"] as HistoryMethod[]) {
     const original = history[name];
@@ -218,7 +226,7 @@ export function createApplier(target: Window, api: OnBoardGlobal): () => Promise
       // Ядро уже на странице: перезапускаем его с новым конфигом.
       api.start?.();
     } catch (error) {
-      console.debug("[OnBoard] загрузка остановлена", error);
+      report("unexpected", error);
     }
   };
 }
@@ -250,7 +258,7 @@ export function start(target: Window = window): void {
     // почти никто не нажимает.
     watchUrl(target, () => void apply());
   } catch (error) {
-    console.debug("[OnBoard] загрузчик остановлен", error);
+    report("unexpected", error);
   }
 }
 
