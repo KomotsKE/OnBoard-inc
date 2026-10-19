@@ -5,14 +5,10 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LoginPage } from "./pages/LoginPage";
 import { InstallPage } from "./pages/InstallPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
+import { TourBuilderPage } from "./pages/TourBuilderPage";
 import { ToursPage } from "./pages/ToursPage";
 import { RegisterPage } from "./pages/RegisterPage";
-import {
-  AnalyticsPage,
-  BrandingPage,
-  NotFoundPage,
-  TourBuilderPage,
-} from "./pages/placeholders";
+import { AnalyticsPage, BrandingPage, NotFoundPage } from "./pages/placeholders";
 
 /**
  * Маршруты панели — §1 docs/screens.md. Вынесены отдельным модулем, чтобы

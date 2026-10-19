@@ -7,11 +7,12 @@ import {
   deleteTour,
   listTours,
   publishTour,
+  type Tour,
   type TourListItem,
 } from "../api/tours";
-import { projectsKey } from "./useProjects";
+import { projectsKey, tourKey, toursKey } from "./keys";
 
-export const toursKey = (projectId: string) => ["tours", projectId] as const;
+export { toursKey } from "./keys";
 
 /**
  * Сначала отмена, потом инвалидация — иначе запрос, запущенный предыдущей
@@ -46,7 +47,13 @@ export function useTourPublication(projectId: string) {
   return useMutation({
     mutationFn: ({ id, published }: { id: string; published: boolean }) =>
       publishTour(id, published),
-    onSuccess: () => refreshTours(queryClient, projectId),
+    onSuccess: (tour: Tour) => {
+      // Ответ — сам тур целиком, поэтому конструктор узнаёт о публикации
+      // сразу. Без этого сервер публиковал тур, а экран продолжал показывать
+      // «Черновик» — поймано сценарием e2e в T3.5.
+      queryClient.setQueryData(tourKey(tour.id), tour);
+      return refreshTours(queryClient, projectId);
+    },
   });
 }
 

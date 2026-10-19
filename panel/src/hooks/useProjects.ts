@@ -5,6 +5,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { projectKey, projectsKey, snippetKey } from "./keys";
 import {
   createProject,
   deleteProject,
@@ -15,10 +16,7 @@ import {
   type Project,
 } from "../api/projects";
 
-/** Ключи из контракта экранов (S4, S5 docs/screens.md): от общего к частному. */
-export const projectsKey = ["projects"] as const;
-export const projectKey = (id: string) => ["project", id] as const;
-export const snippetKey = (id: string) => ["snippet", id] as const;
+export { projectKey, projectsKey, snippetKey } from "./keys";
 
 export function useProjects() {
   // Сигнал отмены передаётся дальше в fetch: иначе отменить запрос нечем.

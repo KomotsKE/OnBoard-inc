@@ -36,12 +36,69 @@ export function createTour(projectId: string, name: string): Promise<TourListIte
   });
 }
 
-export function publishTour(id: string, published: boolean): Promise<TourListItem> {
-  return request<TourListItem>(`/tours/${id}/${published ? "publish" : "unpublish"}`, {
+/** Публикация возвращает тур целиком, вместе со шагами. */
+export function publishTour(id: string, published: boolean): Promise<Tour> {
+  return request<Tour>(`/tours/${id}/${published ? "publish" : "unpublish"}`, {
     method: "POST",
   });
 }
 
 export function deleteTour(id: string): Promise<void> {
   return request<void>(`/tours/${id}`, { method: "DELETE" });
+}
+
+export type Step = {
+  id: string;
+  position: number;
+  selector: string;
+  title: string;
+  body: string;
+  placement: "auto" | "top" | "bottom" | "left" | "right";
+};
+
+/** Тур приходит вместе со шагами — одним запросом (S8 docs/screens.md). */
+export type Tour = Omit<TourListItem, "steps_count" | "runs_7d" | "completion_rate_7d"> & {
+  steps: Step[];
+};
+
+export type StepDraft = {
+  selector: string;
+  title: string;
+  body: string;
+  placement: Step["placement"];
+};
+
+export function getTour(id: string, signal?: AbortSignal): Promise<Tour> {
+  return request<Tour>(`/tours/${id}`, { signal });
+}
+
+export function updateTour(
+  id: string,
+  patch: { name?: string; url_match?: UrlMatch; show_once?: boolean },
+): Promise<Tour> {
+  return request<Tour>(`/tours/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
+}
+
+export function createStep(tourId: string, step: StepDraft): Promise<Step> {
+  return request<Step>(`/tours/${tourId}/steps`, {
+    method: "POST",
+    body: JSON.stringify(step),
+  });
+}
+
+export function updateStep(id: string, patch: Partial<StepDraft>): Promise<Step> {
+  return request<Step>(`/steps/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
+}
+
+export function deleteStep(id: string): Promise<{ tour_status: TourStatus; steps_count: number }> {
+  return request<{ tour_status: TourStatus; steps_count: number }>(`/steps/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export function reorderSteps(tourId: string, stepIds: string[]): Promise<Step[]> {
+  return request<Step[]>(`/tours/${tourId}/steps/order`, {
+    method: "PUT",
+    body: JSON.stringify({ step_ids: stepIds }),
+  });
 }
