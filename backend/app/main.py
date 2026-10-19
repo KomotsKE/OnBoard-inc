@@ -82,6 +82,43 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await engine.dispose()
 
 
+class TransactionMiddleware:
+    """Фиксирует транзакцию запроса до того, как ответ уйдёт клиенту.
+
+    Зависимости с `yield` в FastAPI закрываются после отправки ответа. Коммит
+    на их выходе означает, что API подтверждает запись раньше, чем она
+    зафиксирована: панель получает 204 на удаление, тут же перечитывает список
+    и видит удалённый объект. Так это и было найдено — сценарием e2e в T3.2.
+
+    Ответ с кодом 4xx или 5xx означает отказ, и фиксировать там нечего.
+    """
+
+    def __init__(self, app: Any) -> None:
+        self.app = app
+
+    async def __call__(
+        self,
+        scope: dict[str, Any],
+        receive: Callable[[], Awaitable[Any]],
+        send: Callable[[Any], Awaitable[None]],
+    ) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        async def send_wrapper(message: Any) -> None:
+            if message["type"] == "http.response.start":
+                session = scope.get("state", {}).get("session")
+                if session is not None:
+                    if message["status"] < 400:
+                        await session.commit()
+                    else:
+                        await session.rollback()
+            await send(message)
+
+        await self.app(scope, receive, send_wrapper)
+
+
 class RequestContextMiddleware:
     """Идентификатор запроса и запись о его завершении.
 
@@ -129,6 +166,7 @@ class RequestContextMiddleware:
 
 app = FastAPI(title="OnBoard API", lifespan=lifespan)
 app.add_middleware(RequestContextMiddleware)
+app.add_middleware(TransactionMiddleware)
 app.add_exception_handler(AppError, app_error_handler)
 # Ошибки самого фреймворка тоже обязаны быть в формате RFC 9457: 404 на
 # неизвестный маршрут, 405 и ошибки валидации схем приходят мимо AppError.

@@ -40,12 +40,26 @@ async def open_session(
     factory: async_sessionmaker[AsyncSession],
     statement_timeout_ms: int,
 ) -> AsyncIterator[AsyncSession]:
-    """Одна транзакция на запрос: успешный выход коммитит, исключение откатывает.
+    """Одна транзакция на запрос. Исключение откатывает её немедленно.
+
+    Коммит делает не выход отсюда, а `TransactionMiddleware` — до отправки
+    ответа. Зависимости с `yield` в FastAPI закрываются уже после того, как
+    ответ ушёл клиенту, поэтому коммит на выходе означал бы, что API
+    подтверждает запись раньше, чем она зафиксирована: клиент перечитывает
+    данные и видит прежнее состояние (§12.1 docs/conventions.md).
 
     `statement_timeout` ставится на транзакцию: у публичных маршрутов он строже,
     чем у панельных (§9.1 docs/vision.md). `SET LOCAL` не принимает параметры
     подстановки, поэтому значение приводится к int и вставляется в текст.
     """
-    async with factory() as session, session.begin():
+    async with factory() as session:
         await session.execute(text(f"SET LOCAL statement_timeout = {int(statement_timeout_ms)}"))
-        yield session
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            # После коммита это пустая операция; нужна на случай, если ответ
+            # так и не был отправлен и коммитить оказалось некому.
+            await session.rollback()

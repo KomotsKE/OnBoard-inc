@@ -18,7 +18,7 @@ from app.services import projects as service
 router = APIRouter(prefix="/v1/projects", tags=["projects"])
 
 
-def _read(project) -> ProjectRead:  # noqa: ANN001 — модель SQLAlchemy
+def _read(project, tours_count: int) -> ProjectRead:  # noqa: ANN001 — модель SQLAlchemy
     return ProjectRead(
         id=str(project.id),
         name=project.name,
@@ -28,14 +28,15 @@ def _read(project) -> ProjectRead:  # noqa: ANN001 — модель SQLAlchemy
         # Панель показывает статус подключения, а не саму метку времени:
         # владельцу важно «виджет найден», а не когда именно.
         widget_connected=project.widget_last_seen_at is not None,
+        tours_count=tours_count,
         created_at=project.created_at.isoformat(),
     )
 
 
 @router.get("", response_model=Page[ProjectRead])
 async def list_projects(user: CurrentUser, session: PanelSession) -> Page[ProjectRead]:
-    projects = await service.list_for_user(session, user.id)
-    return Page(items=[_read(project) for project in projects])
+    rows = await service.list_for_user(session, user.id)
+    return Page(items=[_read(project, tours_count) for project, tours_count in rows])
 
 
 @router.post("", response_model=ProjectRead, status_code=status.HTTP_201_CREATED)
@@ -44,12 +45,12 @@ async def create_project(
 ) -> ProjectRead:
     project = await service.create(session, user.id, body.name)
     log_event("project.created", user_id=str(user.id), project_id=str(project.id))
-    return _read(project)
+    return _read(project, 0)
 
 
 @router.get("/{project_id}", response_model=ProjectRead)
-async def get_project(project: OwnedProject) -> ProjectRead:
-    return _read(project)
+async def get_project(project: OwnedProject, session: PanelSession) -> ProjectRead:
+    return _read(project, await service.count_tours(session, project.id))
 
 
 @router.patch("/{project_id}", response_model=ProjectRead)
@@ -64,7 +65,7 @@ async def update_project(
         theme=body.theme,
     )
     log_event("project.updated", project_id=str(updated.id))
-    return _read(updated)
+    return _read(updated, await service.count_tours(session, updated.id))
 
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)

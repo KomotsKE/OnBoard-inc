@@ -92,6 +92,40 @@ class TestList:
         assert [item["name"] for item in body["items"]] == ["Первый"]
 
 
+class TestToursCount:
+    """Список проектов показывает число туров (S4 docs/screens.md)."""
+
+    async def test_counts_tours_of_each_project(self, client):
+        auth = await account(client, "owner@example.test")
+        first = await make_project(client, auth, "С турами")
+        await make_project(client, auth, "Пустой")
+        for name in ("Знакомство", "Вторая попытка"):
+            await client.post(
+                f"/v1/projects/{first['id']}/tours", json={"name": name}, headers=auth
+            )
+
+        items = (await client.get("/v1/projects", headers=auth)).json()["items"]
+
+        counts = {item["name"]: item["tours_count"] for item in items}
+        assert counts == {"С турами": 2, "Пустой": 0}
+
+    async def test_query_count_does_not_grow_with_projects(self, client, count_queries):
+        """Счёт идёт одним агрегатом, а не запросом на проект."""
+        auth = await account(client, "owner@example.test")
+        await make_project(client, auth, "Первый")
+
+        count_queries["n"] = 0
+        await client.get("/v1/projects", headers=auth)
+        with_one = count_queries["n"]
+
+        for index in range(4):
+            await make_project(client, auth, f"Проект {index}")
+        count_queries["n"] = 0
+        await client.get("/v1/projects", headers=auth)
+
+        assert count_queries["n"] == with_one
+
+
 class TestUpdate:
     async def test_updates_name_origins_and_theme(self, client):
         auth = await account(client, "owner@example.test")

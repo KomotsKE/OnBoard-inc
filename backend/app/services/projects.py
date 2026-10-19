@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
 from app.core.errors import NotFoundError, ValidationError
-from app.models import Project
+from app.models import Project, Tour
 from app.schemas.projects import PROJECTS_PER_USER, Theme
 
 
@@ -43,11 +43,27 @@ async def create(session: AsyncSession, user_id: uuid.UUID, name: str) -> Projec
     return project
 
 
-async def list_for_user(session: AsyncSession, user_id: uuid.UUID) -> list[Project]:
-    result = await session.scalars(
-        select(Project).where(Project.user_id == user_id).order_by(Project.created_at.desc())
+async def list_for_user(session: AsyncSession, user_id: uuid.UUID) -> list[tuple[Project, int]]:
+    """Проекты владельца вместе с числом туров в каждом.
+
+    Счёт идёт одним агрегатом: запрос на проект превратил бы список из десяти
+    проектов в одиннадцать запросов (§12.6 docs/conventions.md).
+    """
+    rows = await session.execute(
+        select(Project, func.count(Tour.id))
+        .outerjoin(Tour, Tour.project_id == Project.id)
+        .where(Project.user_id == user_id)
+        .group_by(Project.id)
+        .order_by(Project.created_at.desc())
     )
-    return list(result)
+    return [(project, count) for project, count in rows]
+
+
+async def count_tours(session: AsyncSession, project_id: uuid.UUID) -> int:
+    count = await session.scalar(
+        select(func.count()).select_from(Tour).where(Tour.project_id == project_id)
+    )
+    return count or 0
 
 
 async def get_owned(session: AsyncSession, user_id: uuid.UUID, project_id: uuid.UUID) -> Project:

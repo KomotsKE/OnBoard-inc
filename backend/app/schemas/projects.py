@@ -74,6 +74,9 @@ class ProjectRead(BaseModel):
     allowed_origins: list[str]
     theme: Theme
     widget_connected: bool
+    # Список проектов показывает, сколько в проекте туров (S4 docs/screens.md).
+    # Иначе панели пришлось бы запрашивать туры каждого проекта по отдельности.
+    tours_count: int
     created_at: str
 
 

@@ -30,6 +30,9 @@ async def public_session(request: Request) -> AsyncIterator[AsyncSession]:
         request.app.state.sessionmaker,
         settings.db_statement_timeout_public_ms,
     ) as session:
+        # Коммитит TransactionMiddleware до отправки ответа, и найти сессию
+        # он может только здесь.
+        request.state.session = session
         yield session
 
 
@@ -40,6 +43,7 @@ async def panel_session(request: Request) -> AsyncIterator[AsyncSession]:
         request.app.state.sessionmaker,
         settings.db_statement_timeout_panel_ms,
     ) as session:
+        request.state.session = session
         yield session
 
 

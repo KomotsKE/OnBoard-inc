@@ -93,6 +93,9 @@ async def _create_projects(session: AsyncSession, user: User) -> tuple[Project, 
         public_key=STAND_PUBLIC_KEY,
         allowed_origins=[STAND_ORIGIN],
         theme=Theme().model_dump(),
+        # Виджет на стенде действительно работает, поэтому проект показывается
+        # подключённым сразу: иначе демо начинается с «виджет не найден».
+        widget_last_seen_at=datetime.now(UTC),
     )
     # Второй проект пустой намеренно: панели нужен и непустой список туров,
     # и пустое состояние — без него экран проверяется только на демо-данных.
