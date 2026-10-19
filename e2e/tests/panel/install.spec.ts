@@ -1,6 +1,6 @@
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 
-import { DEMO_EMAIL, DEMO_PASSWORD } from "./demo-owner";
+import { expect, test } from "./owner-session";
 
 /**
  * Экран установки (T3.3).
@@ -14,16 +14,7 @@ import { DEMO_EMAIL, DEMO_PASSWORD } from "./demo-owner";
  * зависеть от порядка запуска нельзя.
  */
 
-const STAND = "http://localhost:8080";
-const API = "http://localhost:8000";
-
-async function signIn(page: Page): Promise<void> {
-  await page.goto("/login");
-  await page.getByLabel("Почта").fill(DEMO_EMAIL);
-  await page.getByLabel("Пароль").fill(DEMO_PASSWORD);
-  await page.getByRole("button", { name: "Войти" }).click();
-  await expect(page).toHaveURL(/\/projects$/);
-}
+import { API_URL as API, STAND_URL as STAND } from "../../urls";
 
 /**
  * Запрос конфига со страницы стенда: ровно то, что делает загрузчик.
@@ -53,12 +44,12 @@ async function askConfigFromStand(page: Page, key: string): Promise<number | "о
 }
 
 test("статус подключения меняется после загрузки виджета на разрешённом домене", async ({
-  page,
+  owner: page,
 }) => {
   // Имя без слова «Установка»: getByRole ищет имя подстрокой, и ссылка
   // карточки совпала бы со ссылкой «Установка» на той же карточке.
   const name = `Сайт ${Date.now().toString().slice(-6)}`;
-  await signIn(page);
+  await page.goto("/projects");
   await page.getByLabel("Название нового проекта").fill(name);
   await page.getByRole("button", { name: "Создать" }).click();
 
@@ -94,8 +85,8 @@ test("статус подключения меняется после загру
   await expect(created).toHaveCount(0);
 });
 
-test("блок для разработчика показывает домены для CSP", async ({ page }) => {
-  await signIn(page);
+test("блок для разработчика показывает домены для CSP", async ({ owner: page }) => {
+  await page.goto("/projects");
   const card = page.locator('[data-testid="project-card"]').filter({ hasText: "Отчётница" });
   await card.getByRole("link", { name: "Установка", exact: true }).click();
 

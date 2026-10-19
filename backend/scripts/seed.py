@@ -58,6 +58,12 @@ DELAYED_STEP = (
 ONCE_PATH = "/once"
 ONCE_STEP = ('[data-testid="once-target"]', "Только один раз", "Больше вы меня не увидите.")
 
+# Четвёртый тур — черновик, и он нужен не демонстрации, а сценариям панели:
+# публикацию надо проверять на туре, который не трогают сценарии виджета,
+# иначе результат зависит от порядка запуска.
+PANEL_PATH = "/panel-check"
+PANEL_STEP = ('[data-testid="brand"]', "Шаг для проверки", "Этот тур живёт для проверок панели.")
+
 STEPS = [
     ('[data-testid="filters-button"]', "Фильтры", "Отчёт настраивается здесь."),
     ('[data-testid="export-button"]', "Экспорт", "Кнопка появляется не сразу — так бывает."),
@@ -121,16 +127,17 @@ async def _create_tour(
     value: str,
     steps: list[tuple[str, str, str]],
     show_once: bool = False,
+    published: bool = True,
 ) -> tuple[Tour, list[Step]]:
     now = datetime.now(UTC)
     tour = Tour(
         project_id=project.id,
         name=name,
-        status="published",
+        status="published" if published else "draft",
         url_match_mode=mode,
         url_match_value=value,
         show_once=show_once,
-        published_at=now,
+        published_at=now if published else None,
         updated_at=now,
     )
     session.add(tour)
@@ -244,6 +251,15 @@ async def seed() -> None:
                 steps=[ONCE_STEP],
                 show_once=True,
             )
+            await _create_tour(
+                session,
+                stand,
+                name="Черновик для проверки",
+                mode="exact",
+                value=PANEL_PATH,
+                steps=[PANEL_STEP],
+                published=False,
+            )
             events = _create_events(stand, tour, steps)
             session.add_all(events)
     finally:
@@ -255,7 +271,8 @@ async def seed() -> None:
         f"  проекты:         {stand.name} ({STAND_PUBLIC_KEY}), {empty.name}\n"
         f"  туры:            «{tour.name}» ({len(steps)} шага) на {TOUR_PATH},\n"
         f"                   «{delayed.name}» (1 шаг) на {DELAYED_PATH},\n"
-        f"                   «{once.name}» (1 шаг, show_once) на {ONCE_PATH}\n"
+        f"                   «{once.name}» (1 шаг, show_once) на {ONCE_PATH},\n"
+        f"                   «Черновик для проверки» (1 шаг, не опубликован) на {PANEL_PATH}\n"
         f"  событий:         {len(events)} в {TOTAL_RUNS} прогонах"
     )
 

@@ -1,6 +1,6 @@
-import { expect, test, type Page } from "@playwright/test";
+import { type Page } from "@playwright/test";
 
-import { DEMO_EMAIL, DEMO_PASSWORD } from "./demo-owner";
+import { expect, test } from "./owner-session";
 
 /**
  * Проекты (T3.2).
@@ -9,14 +9,6 @@ import { DEMO_EMAIL, DEMO_PASSWORD } from "./demo-owner";
  * (см. demo-owner.ts), а проверяемые утверждения связаны одной историей —
  * создать, переключиться, удалить.
  */
-
-async function signIn(page: Page): Promise<void> {
-  await page.goto("/login");
-  await page.getByLabel("Почта").fill(DEMO_EMAIL);
-  await page.getByLabel("Пароль").fill(DEMO_PASSWORD);
-  await page.getByRole("button", { name: "Войти" }).click();
-  await expect(page).toHaveURL(/\/projects$/);
-}
 
 async function createProject(page: Page, name: string): Promise<void> {
   await page.getByLabel("Название нового проекта").fill(name);
@@ -38,12 +30,12 @@ async function removeProject(page: Page, name: string): Promise<void> {
   await expect(card).toHaveCount(0);
 }
 
-test("создание двух проектов, переключение контекста и удаление", async ({ page }) => {
+test("создание двух проектов, переключение контекста и удаление", async ({ owner: page }) => {
   const suffix = Date.now().toString().slice(-6);
   const first = `Первый ${suffix}`;
   const second = `Второй ${suffix}`;
 
-  await signIn(page);
+  await page.goto("/projects");
   await createProject(page, first);
   await createProject(page, second);
 
@@ -68,12 +60,12 @@ test("создание двух проектов, переключение ко�
   await removeProject(page, second);
 });
 
-test("карточка проекта показывает число туров", async ({ page }) => {
-  await signIn(page);
+test("карточка проекта показывает число туров", async ({ owner: page }) => {
+  await page.goto("/projects");
 
-  // Демо-проект стенда: три тура (см. make seed). Статус подключения виджета
+  // Демо-проект стенда: четыре тура (см. make seed). Статус подключения виджета
   // проверяется там, где он меняется, — в сценарии экрана установки.
   const card = page.locator('[data-testid="project-card"]').filter({ hasText: "Отчётница" });
 
-  await expect(card).toContainText("3 тура");
+  await expect(card).toContainText("4 тура");
 });

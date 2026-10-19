@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import type { Project } from "../api/projects";
 import { useCreateProject, useDeleteProject, useProjects } from "../hooks/useProjects";
+import { plural } from "../text";
 
 /**
  * S4 docs/screens.md — список проектов и создание нового.
@@ -134,16 +135,5 @@ function ProjectCard({ project }: { project: Project }) {
 
 /** «1 тур», «2 тура», «5 туров» — иначе интерфейс выглядит машинным. */
 export function toursLabel(count: number): string {
-  const remainder100 = count % 100;
-  const remainder10 = count % 10;
-  if (remainder100 >= 11 && remainder100 <= 14) {
-    return `${count} туров`;
-  }
-  if (remainder10 === 1) {
-    return `${count} тур`;
-  }
-  if (remainder10 >= 2 && remainder10 <= 4) {
-    return `${count} тура`;
-  }
-  return `${count} туров`;
+  return plural(count, ["тур", "тура", "туров"]);
 }

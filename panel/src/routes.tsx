@@ -5,13 +5,13 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { LoginPage } from "./pages/LoginPage";
 import { InstallPage } from "./pages/InstallPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
+import { ToursPage } from "./pages/ToursPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import {
   AnalyticsPage,
   BrandingPage,
   NotFoundPage,
   TourBuilderPage,
-  ToursPage,
 } from "./pages/placeholders";
 
 /**

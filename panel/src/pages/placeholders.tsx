@@ -14,7 +14,6 @@ function Placeholder({ title, task }: Props) {
   );
 }
 
-export const ToursPage = () => <Placeholder title="Туры" task="T3.4" />;
 export const TourBuilderPage = () => <Placeholder title="Конструктор тура" task="T3.5" />;
 export const AnalyticsPage = () => <Placeholder title="Аналитика" task="T4.4" />;
 export const BrandingPage = () => <Placeholder title="Оформление" task="T6.2" />;
