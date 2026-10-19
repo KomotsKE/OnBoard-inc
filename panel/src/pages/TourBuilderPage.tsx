@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 
 import type { StepDraft, UrlMatch } from "../api/tours";
 import { StepForm } from "../components/StepForm";
+import { useProject } from "../hooks/useProjects";
 import { StepList } from "../components/StepList";
 import { TooltipPreview } from "../components/TooltipPreview";
 import {
@@ -20,6 +21,7 @@ import { plural } from "../text";
 export function TourBuilderPage() {
   const { projectId = "", tourId = "" } = useParams();
   const tour = useTour(tourId);
+  const project = useProject(projectId);
   const createStep = useCreateStep(tourId, projectId);
   const updateStep = useUpdateStep(tourId, projectId);
   const deleteStep = useDeleteStep(tourId, projectId);
@@ -115,7 +117,16 @@ export function TourBuilderPage() {
                   Не удалось сохранить шаг. Проверьте селектор и текст.
                 </p>
               ) : null}
-              <TooltipPreview step={selected} index={steps.indexOf(selected)} total={steps.length} />
+              {project.data ? (
+                // Превью рисуется темой проекта, а не токенами панели:
+                // иначе оно показывает не то, что увидит посетитель.
+                <TooltipPreview
+                  step={selected}
+                  index={steps.indexOf(selected)}
+                  total={steps.length}
+                  theme={project.data.theme}
+                />
+              ) : null}
             </>
           ) : null}
         </div>

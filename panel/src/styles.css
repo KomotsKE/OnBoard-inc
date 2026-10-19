@@ -438,7 +438,7 @@ p {
   border-radius: var(--onboard-radius);
   background: #ffffff;
   color: var(--onboard-text);
-  font-family: var(--onboard-font);
+  font: 14px/1.45 var(--onboard-font);
   box-shadow: 0 12px 32px rgb(15 23 42 / 28%);
 }
 
@@ -624,4 +624,22 @@ p {
   color: var(--onboard-text-muted);
   font-size: 14px;
   line-height: 1.6;
+}
+
+/* Экран оформления */
+.branding input[type="color"] {
+  width: 64px;
+  height: 36px;
+  padding: 2px;
+}
+
+.branding input[type="range"] {
+  width: 220px;
+}
+
+.branding label {
+  display: block;
+  margin-top: 10px;
+  font-size: 14px;
+  font-weight: 600;
 }

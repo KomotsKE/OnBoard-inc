@@ -2,14 +2,15 @@ import { Navigate, type RouteObject } from "react-router-dom";
 
 import { AppLayout } from "./components/AppLayout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
-import { LoginPage } from "./pages/LoginPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
+import { BrandingPage } from "./pages/BrandingPage";
 import { InstallPage } from "./pages/InstallPage";
+import { LoginPage } from "./pages/LoginPage";
+import { NotFoundPage } from "./pages/NotFoundPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
+import { RegisterPage } from "./pages/RegisterPage";
 import { TourBuilderPage } from "./pages/TourBuilderPage";
 import { ToursPage } from "./pages/ToursPage";
-import { RegisterPage } from "./pages/RegisterPage";
-import { BrandingPage, NotFoundPage } from "./pages/placeholders";
 
 /**
  * Маршруты панели — §1 docs/screens.md. Вынесены отдельным модулем, чтобы

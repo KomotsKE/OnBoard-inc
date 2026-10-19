@@ -63,14 +63,14 @@ test("создание двух проектов, переключение ко�
 test("карточка проекта показывает число туров", async ({ owner: page }) => {
   await page.goto("/projects");
 
-  // Сверяем с тем, что на самом деле в проекте, а не с числом из демо-данных:
-  // соседние сценарии создают и удаляют туры в том же проекте, и абсолютное
-  // число зависело бы от порядка запуска.
-  const card = page.locator('[data-testid="project-card"]').filter({ hasText: "Отчётница" });
-  const shown = Number(/(\d+)\s+тур/.exec((await card.textContent()) ?? "")?.[1]);
+  // Проект «Второй сайт» из make seed не трогает ни один другой сценарий:
+  // в «Отчётнице» соседние сценарии создают и удаляют свои туры, и число
+  // на карточке успевало разойтись со списком прямо посреди проверки.
+  const card = page.locator('[data-testid="project-card"]').filter({ hasText: "Второй сайт" });
+  await expect(card).toContainText("0 туров");
 
   await card.getByRole("link", { name: "Туры", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Туры" })).toBeVisible();
 
-  expect(shown).toBe(await page.getByTestId("tour-row").count());
+  await expect(page.getByTestId("tours-empty")).toBeVisible();
+  await expect(page.getByTestId("tour-row")).toHaveCount(0);
 });
