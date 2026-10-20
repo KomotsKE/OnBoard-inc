@@ -8,8 +8,24 @@ import { ApiError } from "../api/client";
  * (§9 docs/conventions.md).
  */
 
-/** Минимум из §5.1 docs/data-model.md: требований к составу нет, только длина. */
+/** Длина из §5.1 docs/data-model.md: требований к составу нет, только длина. */
 const PASSWORD_MIN = 15;
+const PASSWORD_MAX = 128;
+
+/**
+ * Длину проверяем до отправки: иначе человек получает в ответ список полей
+ * бэкенда («проверьте поля: password») и зря тратит попытку из лимита
+ * регистраций (§9.2 docs/vision.md).
+ */
+export function passwordProblem(password: string): string | null {
+  if (password.length < PASSWORD_MIN) {
+    return `Пароль короче ${PASSWORD_MIN} символов: сейчас ${password.length}`;
+  }
+  if (password.length > PASSWORD_MAX) {
+    return `Пароль длиннее ${PASSWORD_MAX} символов`;
+  }
+  return null;
+}
 
 type Props = {
   title: string;
@@ -33,7 +49,8 @@ export function messageFor(error: unknown): string {
     case 429:
       return "Слишком много попыток. Подождите немного и повторите.";
     case 422:
-      return error.detail ?? "Проверьте адрес и пароль";
+      // detail бэкенда перечисляет поля латиницей — это не текст для человека.
+      return "Проверьте адрес и пароль";
     default:
       return error.detail ?? error.title;
   }
@@ -47,6 +64,11 @@ export function AuthForm({ title, submitLabel, hint, footer, onSubmit }: Props) 
 
   async function submit(event: React.FormEvent): Promise<void> {
     event.preventDefault();
+    const problem = passwordProblem(password);
+    if (problem) {
+      setError(problem);
+      return;
+    }
     setError(null);
     setBusy(true);
     try {
