@@ -51,6 +51,9 @@ class EditorState(BaseModel):
     """
 
     mode: Mode
+    # Загрузчик на странице знает только токен: имя файла редактора с хэшем
+    # сборки берётся отсюда, как core_url у конфига (ADR-0009).
+    editor_url: str
     tour: EditorTour
     steps: list[StepRead]
     theme: Theme

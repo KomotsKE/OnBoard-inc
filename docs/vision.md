@@ -609,10 +609,12 @@ GET  /v1/public/config?key=pk_…&url=/reports?plan=pro
 
 POST /v1/public/events          { key, events: [ {event_id, type, …} ] } → 204
 
-GET  /v1/public/editor/session?token=…   → 200 { mode, tour, steps, theme }
+GET  /v1/public/editor/session?token=…   → 200 { mode, editor_url, tour, steps, theme }
 POST /v1/public/editor/steps             { token, step } → 201 { step }
 PATCH /v1/public/editor/steps/{id}       { token, step } → 200 { step }
 DELETE /v1/public/editor/steps/{id}?token=…              → 204
+     editor_url — адрес editor.js с хэшем сборки, из того же манифеста, что
+     и core_url (ADR-0009): загрузчик на странице знает только токен.
      Токен — вместо публичного ключа: подписан, живёт 15 минут, даёт права на
      один тур (ADR-0004). Негодный токен → 401, исчезнувший тур → 404 (за 15
      минут его успевают удалить в панели), шаг другого тура → 404.

@@ -65,6 +65,8 @@ class TestSession:
         assert state["mode"] == "edit"
         assert state["tour"] == {"id": tour_id, "name": "Знакомство"}
         assert [step["body"] for step in state["steps"]] == ["Первый"]
+        # Загрузчик знает только токен: имя файла редактора с хэшем — отсюда.
+        assert state["editor_url"].endswith(".js")
         # Тема нужна, чтобы подсказка в редакторе выглядела как у посетителя.
         assert state["theme"]["primary_color"]
 

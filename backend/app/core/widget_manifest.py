@@ -27,6 +27,10 @@ class WidgetManifest:
         """
         return self._load().get("core")
 
+    def editor_file(self) -> str | None:
+        """Имя файла редактора. None на тех же основаниях, что и у ядра."""
+        return self._load().get("editor")
+
     def _load(self) -> dict[str, str]:
         try:
             mtime = self._path.stat().st_mtime

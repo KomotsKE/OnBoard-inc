@@ -13,6 +13,8 @@
 import { guard, report } from "../core/guard";
 
 const GLOBAL = "OnBoard";
+/** Параметр, по которому страница открыта в режиме редактора (ADR-0004). */
+const EDITOR_PARAM = "onboard_edit";
 const VERSION = "0.1.0";
 
 // Таймаут запроса конфига — §9.1 docs/vision.md. Повтора в этой загрузке
@@ -50,6 +52,8 @@ export type WidgetConfig = {
 type OnBoardGlobal = {
   version: string;
   config: LoaderConfig;
+  /** Токен режима редактора: его читает `editor.js` при старте. */
+  editor?: { token: string };
   /** Конфиг для ядра: оно читает его при старте, а не запрашивает снова. */
   boot?: WidgetConfig;
   /** Появляются вместе с ядром (§6 docs/conventions.md). */
@@ -110,6 +114,65 @@ export async function fetchConfig(
   } catch (error) {
     // Повтора в этой загрузке страницы нет — см. комментарий у таймаута.
     report("config_fetch_failed", error);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * Токен редактора из адреса или null, если режим не запрошен.
+ *
+ * Принимает и `?a=b`, и целый адрес: искать токен приходится в двух местах
+ * (см. `initialUrl`), и разбирать их по-разному — лишний повод ошибиться.
+ */
+export function editorToken(source: string): string | null {
+  const query = source.includes("?") ? source.slice(source.indexOf("?")) : source;
+  const token = new URLSearchParams(query).get(EDITOR_PARAM);
+  return token !== null && token.trim() !== "" ? token : null;
+}
+
+/**
+ * Адрес, с которым документ загрузили.
+ *
+ * Сниппет стоит с `async`, а одностраничные приложения на старте нередко
+ * переписывают адрес через `replaceState` — к моменту нашего запуска токена
+ * в `location` уже может не быть. Запись навигации его помнит: она про
+ * загрузку документа, и `replaceState` её не меняет.
+ */
+function initialUrl(target: Window): string {
+  try {
+    const [entry] = target.performance.getEntriesByType("navigation");
+    return entry instanceof PerformanceNavigationTiming ? entry.name : "";
+  } catch {
+    // Navigation Timing есть не везде; это запасной путь, а не основной.
+    return "";
+  }
+}
+
+/**
+ * Состояние сессии редактора — единственный запрос, который загрузчик делает
+ * в этом режиме. Он же и есть проверка токена: без валидного токена редактор
+ * не грузится вовсе.
+ */
+export async function fetchEditorState(
+  config: LoaderConfig,
+  token: string,
+  timeoutMs: number = CONFIG_TIMEOUT_MS,
+): Promise<{ editor_url: string } | null> {
+  const params = new URLSearchParams({ token });
+  const url = `${config.apiUrl}/v1/public/editor/session?${params.toString()}`;
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { signal: abort.signal, credentials: "omit", mode: "cors" });
+    if (!response.ok) {
+      console.debug("[OnBoard] сессия редактора недействительна");
+      return null;
+    }
+    return (await response.json()) as { editor_url: string };
+  } catch (error) {
+    report("editor_request_failed", error);
     return null;
   } finally {
     clearTimeout(timer);
@@ -231,6 +294,20 @@ export function createApplier(target: Window, api: OnBoardGlobal): () => Promise
   };
 }
 
+/** Проверяет токен и подгружает `editor.js`; при отказе страница остаётся как была. */
+async function startEditorMode(
+  target: Window,
+  api: OnBoardGlobal,
+  token: string,
+): Promise<void> {
+  const state = await fetchEditorState(api.config, token);
+  if (state === null) {
+    return;
+  }
+  api.editor = { token };
+  loadCore(target.document, state.editor_url);
+}
+
 export function start(target: Window = window): void {
   try {
     // Сниппет вполне могут вставить дважды — в шаблон страницы и в шаблон
@@ -250,6 +327,14 @@ export function start(target: Window = window): void {
     // Глобал ставится до запроса конфига: второй сниппет на той же странице
     // должен увидеть нас сразу, а не успеть отправить свой запрос.
     (target as unknown as Record<string, unknown>)[GLOBAL] = api;
+
+    const token = editorToken(target.location.search) ?? editorToken(initialUrl(target));
+    if (token !== null) {
+      // В режиме редактора тур не показывается: владелец выбирает элементы,
+      // и подсказки поверх страницы ему только мешали бы (ADR-0004).
+      void startEditorMode(target, api, token);
+      return;
+    }
 
     const apply = createApplier(target, api);
     void apply();

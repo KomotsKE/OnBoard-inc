@@ -12,9 +12,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, Request, Response, status
 
 from app.core.deps import PublicSession, SettingsDep
-from app.core.errors import ForbiddenError, ForbiddenOriginError
+from app.core.errors import ForbiddenError, ForbiddenOriginError, ServiceUnavailableError
 from app.core.logging import log_event
 from app.core.rate_limit import PUBLIC_EDITOR, RateLimiter, check
+from app.core.widget_manifest import WidgetManifest
 from app.models import Project, Tour
 from app.schemas.editor import (
     EditorState,
@@ -40,7 +41,12 @@ def _limiter(request: Request) -> RateLimiter:
     return request.app.state.rate_limiter
 
 
+def _manifest(request: Request) -> WidgetManifest:
+    return request.app.state.widget_manifest
+
+
 Limiter = Annotated[RateLimiter, Depends(_limiter)]
+Manifest = Annotated[WidgetManifest, Depends(_manifest)]
 
 
 def _read(step) -> StepRead:
@@ -113,13 +119,22 @@ async def read_session(
     session: PublicSession,
     settings: SettingsDep,
     limiter: Limiter,
+    manifest: Manifest,
     token: Annotated[str, Query(min_length=1, max_length=2000)],
 ) -> EditorState:
     tour, project, mode = await _authorise(
         request, response, session, settings, limiter, token, writes=False
     )
+
+    editor_file = manifest.editor_file()
+    if editor_file is None:
+        # Как и у конфига: отсутствие манифеста — отказ развёртки, и он должен
+        # быть виден в логах, а не выглядеть как «редактор не работает».
+        raise ServiceUnavailableError("бандл редактора недоступен")
+
     return EditorState(
         mode=mode,
+        editor_url=f"{str(settings.widget_base_url).rstrip('/')}/{editor_file}",
         tour=EditorTour(id=str(tour.id), name=tour.name),
         steps=[_read(step) for step in tour.steps],
         theme=Theme(**project.theme),

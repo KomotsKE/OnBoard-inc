@@ -17,6 +17,8 @@ export type ErrorCode =
   | "render_failed"
   | "storage_unavailable"
   | "target_timeout"
+  /** Запрос редактора не удался: в аналитику не уходит, только в консоль. */
+  | "editor_request_failed"
   | "unexpected";
 
 /** Куда уходят ошибки кроме консоли. Ставится ядром на время тура. */
