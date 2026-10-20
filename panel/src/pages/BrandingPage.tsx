@@ -35,7 +35,7 @@ export function BrandingPage() {
     return <Loading what="оформление" />;
   }
   if (project.isError) {
-    return <ErrorState what="оформление" onRetry={() => void project.refetch()} />;
+    return <ErrorState what="оформление" onRetry={() => void project.refetch()} error={project.error} />;
   }
 
   const theme = draft ?? project.data.theme;

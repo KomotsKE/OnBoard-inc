@@ -22,7 +22,7 @@ export function InstallPage() {
     return <Loading what="проект" />;
   }
   if (project.isError) {
-    return <ErrorState what="проект" onRetry={() => void project.refetch()} />;
+    return <ErrorState what="проект" onRetry={() => void project.refetch()} error={project.error} />;
   }
 
   return (

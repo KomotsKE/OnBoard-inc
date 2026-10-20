@@ -25,7 +25,7 @@ export function AnalyticsPage() {
     return <Loading what="воронку" />;
   }
   if (analytics.isError) {
-    return <ErrorState what="воронку" onRetry={() => void analytics.refetch()} />;
+    return <ErrorState what="воронку" onRetry={() => void analytics.refetch()} error={analytics.error} />;
   }
 
   return (

@@ -23,7 +23,7 @@ export function ToursPage() {
     return <Loading what="туры" />;
   }
   if (tours.isError) {
-    return <ErrorState what="туры" onRetry={() => void tours.refetch()} />;
+    return <ErrorState what="туры" onRetry={() => void tours.refetch()} error={tours.error} />;
   }
 
   return (

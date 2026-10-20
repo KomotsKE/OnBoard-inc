@@ -38,7 +38,7 @@ export function TourBuilderPage() {
     return <Loading what="тур" />;
   }
   if (tour.isError) {
-    return <ErrorState what="тур" onRetry={() => void tour.refetch()} />;
+    return <ErrorState what="тур" onRetry={() => void tour.refetch()} error={tour.error} />;
   }
 
   const steps = tour.data.steps;

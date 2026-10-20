@@ -74,3 +74,34 @@ test("карточка проекта показывает число туров
   await expect(page.getByTestId("tours-empty")).toBeVisible();
   await expect(page.getByTestId("tour-row")).toHaveCount(0);
 });
+
+test("карточка показывает состояние виджета, ключ и подсказку", async ({ owner: page }) => {
+  const suffix = Date.now().toString().slice(-6);
+  const fresh = `Без виджета ${suffix}`;
+
+  await page.goto("/projects");
+  await createProject(page, fresh);
+
+  const card = page.locator('[data-testid="project-card"]').filter({ hasText: fresh });
+  // Состояние названо словом, а не одним цветом: иначе список читается наугад.
+  await expect(card.getByTestId("widget-state")).toHaveText(/виджет .*не найден/);
+  await expect(card.getByTestId("project-key")).toHaveText(/^pk_[0-9a-f]{32}$/);
+  await expect(card).toContainText("сниппет");
+
+  // У демо-проекта стенда виджет запрашивал конфиг — состояние другое.
+  const stand = page.locator('[data-testid="project-card"]').filter({ hasText: "Отчётница" });
+  await expect(stand.getByTestId("widget-state")).toHaveText(/подключён/);
+
+  await removeProject(page, fresh);
+});
+
+test("чужой проект даёт «не найдено», а не общую ошибку", async ({ owner: page }) => {
+  // 404 от API не различает «нет такого» и «не ваше» (ADR-0006) — экран тоже.
+  await page.goto("/projects/0b5b3c4e-0000-4000-8000-000000000000/tours");
+
+  await expect(page.getByRole("heading", { name: "Не найдено" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Повторить" })).toHaveCount(0);
+
+  await page.getByRole("link", { name: "К проектам" }).click();
+  await expect(page).toHaveURL(/\/projects$/);
+});

@@ -316,6 +316,57 @@ p {
 }
 
 .projects__new-row button,
+/* Карточка проекта: слева кто это, справа что с ним делать. */
+.projects__row {
+  display: flex;
+  gap: var(--space-5);
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.projects__about {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.projects__key {
+  display: block;
+  margin-top: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink-subtle);
+  overflow-wrap: anywhere;
+}
+
+.projects__hint {
+  margin: var(--space-3) 0 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+
+/* Экран «не найдено» занимает полосу целиком: это ответ, а не сноска. */
+.state--empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
+.state__action {
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+
 .projects__delete {
   padding: 8px 14px;
   border: 1px solid var(--panel-border);

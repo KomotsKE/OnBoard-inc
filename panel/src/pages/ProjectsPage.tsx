@@ -77,21 +77,49 @@ function ProjectCard({ project }: { project: Project }) {
 
   return (
     <li className="projects__card" data-testid="project-card">
-      <h2>
-        <Link to={`/projects/${project.id}/tours`}>{project.name}</Link>
-      </h2>
-      <p>
-        {/* Владельцу важно «виджет найден», а не когда именно (S4). */}
-        {project.widget_connected ? "Виджет подключён" : "Виджет ещё не найден"} ·{" "}
-        {toursLabel(project.tours_count)}
-      </p>
-      <p className="projects__links">
-        <Link to={`/projects/${project.id}/tours`}>Туры</Link>
-        <Link to={`/projects/${project.id}/install`}>Установка</Link>
-        <button type="button" className="projects__delete" onClick={() => setConfirming(true)}>
-          Удалить
-        </button>
-      </p>
+      <div className="projects__row">
+        <div className="projects__about">
+          <h2>
+            <Link to={`/projects/${project.id}/tours`}>{project.name}</Link>
+          </h2>
+          <p>
+            {/* Владельцу важно «виджет найден», а не когда именно (S4).
+                Состояние названо словом: по одному цвету список не читается. */}
+            <span
+              className={
+                project.widget_connected
+                  ? "tours__badge tours__badge--live"
+                  : "tours__badge"
+              }
+              data-testid="widget-state"
+            >
+              {project.widget_connected ? "виджет подключён" : "виджет ещё не найден"}
+            </span>{" "}
+            · {toursLabel(project.tours_count)} ·{" "}
+            {project.allowed_origins.length > 0
+              ? project.allowed_origins.join(", ")
+              : "доменов нет"}
+          </p>
+          <code className="projects__key" data-testid="project-key">
+            {project.public_key}
+          </code>
+        </div>
+
+        <p className="projects__links">
+          <Link to={`/projects/${project.id}/tours`}>Туры</Link>
+          <Link to={`/projects/${project.id}/install`}>Установка</Link>
+          <button type="button" className="projects__delete" onClick={() => setConfirming(true)}>
+            Удалить
+          </button>
+        </p>
+      </div>
+
+      {project.widget_connected ? null : (
+        <p className="projects__hint">
+          Виджет ещё ни разу не запрашивал конфигурацию. Поставьте сниппет на страницы
+          сайта — он на экране «Установка».
+        </p>
+      )}
 
       {confirming ? (
         <form
