@@ -13,9 +13,9 @@ from fastapi import APIRouter, Depends, Request, Response, status
 from pydantic import ValidationError as SchemaError
 
 from app.core.deps import PublicSession
-from app.core.errors import ForbiddenOriginError, RateLimitedError, ValidationError
+from app.core.errors import ForbiddenOriginError, ValidationError
 from app.core.logging import log_event
-from app.core.rate_limit import PUBLIC_EVENTS, RateLimiter
+from app.core.rate_limit import PUBLIC_EVENTS, RateLimiter, check
 from app.schemas.events import EventBatch
 from app.services import events as service
 from app.services import public_config as projects
@@ -55,12 +55,7 @@ async def ingest(request: Request, session: PublicSession, limiter: Limiter) -> 
     batch = await _read_batch(request)
 
     client_ip = request.client.host if request.client else "unknown"
-    limit, window = PUBLIC_EVENTS
-    decision = limiter.allow(f"events:{batch.key}:{client_ip}", limit, window)
-    if not decision.allowed:
-        # Имя политики, а не ключ бакета: в ключе есть IP (инвариант №7).
-        log_event("rate_limit.exceeded", level=logging.WARNING, limit="public_events")
-        raise RateLimitedError(decision.retry_after_s)
+    check(limiter, f"events:{batch.key}:{client_ip}", PUBLIC_EVENTS, name="public_events")
 
     project = await projects.get_project(session, batch.key)
 

@@ -4,6 +4,7 @@ Access-токен отдаётся в теле ответа, refresh — в http
 Лимиты частоты — §9.2 docs/vision.md; записи журнала делаются после коммита.
 """
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, Response, status
@@ -18,6 +19,7 @@ from app.core.rate_limit import (
     REFRESH_BY_IP,
     REGISTER_BY_IP,
     RateLimiter,
+    check,
 )
 from app.models import User
 from app.schemas.auth import Credentials, TokenResponse, UserResponse
@@ -37,13 +39,6 @@ def _limiter(request: Request) -> RateLimiter:
 
 def _client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
-
-
-def _check(limiter: RateLimiter, bucket: str, policy: tuple[int, int]) -> None:
-    limit, window = policy
-    decision = limiter.allow(bucket, limit, window)
-    if not decision.allowed:
-        raise RateLimitedError(decision.retry_after_s)
 
 
 def _set_refresh_cookie(response: Response, settings: Settings, token: str) -> None:
@@ -72,7 +67,7 @@ async def register(
     settings: SettingsDep,
     limiter: Limiter,
 ) -> TokenResponse:
-    _check(limiter, f"register:ip:{_client_ip(request)}", REGISTER_BY_IP)
+    check(limiter, f"register:ip:{_client_ip(request)}", REGISTER_BY_IP, name="panel_register")
 
     issued = await service.register(session, settings, body.email, body.password)
     _set_refresh_cookie(response, settings, issued.refresh_token)
@@ -89,12 +84,15 @@ async def login(
     settings: SettingsDep,
     limiter: Limiter,
 ) -> TokenResponse:
-    _check(limiter, f"login:ip:{_client_ip(request)}", LOGIN_BY_IP)
+    check(limiter, f"login:ip:{_client_ip(request)}", LOGIN_BY_IP, name="panel_login")
     email_bucket = f"login:email:{body.email}"
     limit, window = LOGIN_FAILURES_BY_EMAIL
     # Счётчик по адресу ведётся по неудачам, поэтому сначала проверяем, не
     # исчерпан ли он, и только потом пробуем пароль.
     if not limiter.allow(email_bucket, limit, window, record=False).allowed:
+        # Не через `check`: счётчик по адресу пополняется по исходу, а не по
+        # факту запроса, поэтому проверка и запись здесь разведены.
+        log_event("rate_limit.exceeded", level=logging.WARNING, limit="panel_login_email")
         raise RateLimitedError(window)
 
     try:
@@ -117,7 +115,7 @@ async def refresh(
     settings: SettingsDep,
     limiter: Limiter,
 ) -> TokenResponse:
-    _check(limiter, f"refresh:ip:{_client_ip(request)}", REFRESH_BY_IP)
+    check(limiter, f"refresh:ip:{_client_ip(request)}", REFRESH_BY_IP, name="panel_refresh")
 
     token = request.cookies.get(COOKIE_NAME)
     if not token:

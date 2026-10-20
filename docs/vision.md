@@ -609,9 +609,20 @@ GET  /v1/public/config?key=pk_…&url=/reports?plan=pro
 
 POST /v1/public/events          { key, events: [ {event_id, type, …} ] } → 204
 
-GET  /v1/public/editor/session?token=…   → 200 { tour, steps, theme }
+GET  /v1/public/editor/session?token=…   → 200 { mode, tour, steps, theme }
 POST /v1/public/editor/steps             { token, step } → 201 { step }
-PATCH/DELETE /v1/public/editor/steps/{id}
+PATCH /v1/public/editor/steps/{id}       { token, step } → 200 { step }
+DELETE /v1/public/editor/steps/{id}?token=…              → 204
+     Токен — вместо публичного ключа: подписан, живёт 15 минут, даёт права на
+     один тур (ADR-0004). Негодный токен → 401, исчезнувший тур → 404 (за 15
+     минут его успевают удалить в панели), шаг другого тура → 404.
+     mode=preview читает тур, но не меняет шаги → 403: превью проходит тур
+     глазами посетителя. Origin проверяется тем же allowed_origins, что и у
+     конфига, и возвращается в Access-Control-Allow-Origin.
+     Мутации идут обычным JSON, поэтому браузер шлёт preflight — OPTIONS на
+     любой путь контура отвечает 204 с Allow-Methods и Max-Age. Трюк
+     с text/plain, которым обходится preflight в /public/events, здесь не
+     годится: PATCH и DELETE вызывают его в любом случае.
 ```
 
 ### 8.2 Приватный API панели (JWT)

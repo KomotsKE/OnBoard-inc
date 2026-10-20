@@ -56,6 +56,12 @@ class ForbiddenOriginError(AppError):
     title = "Origin не разрешён для проекта"
 
 
+class ForbiddenError(AppError):
+    status = 403
+    type = "/errors/forbidden"
+    title = "Недостаточно прав"
+
+
 class RateLimitedError(AppError):
     status = 429
     type = "/errors/rate-limited"

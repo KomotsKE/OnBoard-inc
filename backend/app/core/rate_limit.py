@@ -6,10 +6,14 @@
 (§12.4 docs/conventions.md).
 """
 
+import logging
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass
 from typing import Protocol
+
+from app.core.errors import RateLimitedError
+from app.core.logging import log_event
 
 
 @dataclass(frozen=True)
@@ -71,3 +75,23 @@ PUBLIC_CONFIG = (120, 60)
 # Батчи событий: защита от случайного шторма, а не от злоумышленника —
 # один посетитель за минуту столько не наберёт даже на длинном туре.
 PUBLIC_EVENTS = (100, 60)
+# Маршруты редактора: за токеном стоит один владелец, выбирающий элементы
+# руками, — минуты с избытком хватает на самый быстрый клик.
+PUBLIC_EDITOR = (60, 60)
+
+
+def check(limiter: RateLimiter, bucket: str, policy: tuple[int, int], *, name: str) -> None:
+    """Проверяет лимит и отказывает с 429, записывая отказ в журнал.
+
+    Помощник общий для всех потребителей: записи `rate_limit.exceeded` требует
+    §9.3 vision.md, а повторённая в каждом маршруте проверка уже разъехалась —
+    маршруты аутентификации отказывали молча.
+
+    В журнал уходит имя политики, а не ключ бакета: в ключе бывает IP, а его
+    в логах нет никогда (инвариант №7).
+    """
+    limit, window = policy
+    decision = limiter.allow(bucket, limit, window)
+    if not decision.allowed:
+        log_event("rate_limit.exceeded", level=logging.WARNING, limit=name)
+        raise RateLimitedError(decision.retry_after_s)

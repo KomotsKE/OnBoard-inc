@@ -14,11 +14,10 @@ from fastapi import APIRouter, Depends, Query, Request, Response
 from app.core.deps import PublicSession, SettingsDep
 from app.core.errors import (
     ForbiddenOriginError,
-    RateLimitedError,
     ServiceUnavailableError,
 )
 from app.core.logging import log_event
-from app.core.rate_limit import PUBLIC_CONFIG, RateLimiter
+from app.core.rate_limit import PUBLIC_CONFIG, RateLimiter, check
 from app.core.widget_manifest import WidgetManifest
 from app.models import Tour
 from app.schemas.projects import Theme
@@ -97,13 +96,7 @@ async def widget_config(
     manifest: Manifest,
 ) -> Response:
     client_ip = request.client.host if request.client else "unknown"
-    limit, window = PUBLIC_CONFIG
-    decision = limiter.allow(f"config:{key}:{client_ip}", limit, window)
-    if not decision.allowed:
-        # Имя политики, а не ключ бакета: в ключе есть IP, а его в логах нет
-        # никогда (инвариант №7).
-        log_event("rate_limit.exceeded", level=logging.WARNING, limit="public_config")
-        raise RateLimitedError(decision.retry_after_s)
+    check(limiter, f"config:{key}:{client_ip}", PUBLIC_CONFIG, name="public_config")
 
     project = await service.get_project(session, key)
 

@@ -23,6 +23,7 @@ from app.api.v1.panel import projects as project_routes
 from app.api.v1.panel import steps as step_routes
 from app.api.v1.panel import tours as tour_routes
 from app.api.v1.public import config as public_config_routes
+from app.api.v1.public import editor as public_editor_routes
 from app.api.v1.public import events as public_event_routes
 from app.core.config import get_settings
 from app.core.errors import (
@@ -181,6 +182,7 @@ app.include_router(tour_routes.router)
 app.include_router(step_routes.router)
 app.include_router(public_config_routes.router)
 app.include_router(public_event_routes.router)
+app.include_router(public_editor_routes.router)
 
 
 @app.get("/health")
