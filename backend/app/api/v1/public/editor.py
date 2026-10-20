@@ -126,15 +126,17 @@ async def read_session(
         request, response, session, settings, limiter, token, writes=False
     )
 
-    editor_file = manifest.editor_file()
-    if editor_file is None:
+    editor_file, core_file = manifest.editor_file(), manifest.core_file()
+    if editor_file is None or core_file is None:
         # Как и у конфига: отсутствие манифеста — отказ развёртки, и он должен
         # быть виден в логах, а не выглядеть как «редактор не работает».
         raise ServiceUnavailableError("бандл редактора недоступен")
 
+    base = str(settings.widget_base_url).rstrip("/")
     return EditorState(
         mode=mode,
-        editor_url=f"{str(settings.widget_base_url).rstrip('/')}/{editor_file}",
+        editor_url=f"{base}/{editor_file}",
+        core_url=f"{base}/{core_file}",
         tour=EditorTour(id=str(tour.id), name=tour.name),
         steps=[_read(step) for step in tour.steps],
         theme=Theme(**project.theme),

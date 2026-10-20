@@ -56,7 +56,8 @@ export function useTour(tourId: string) {
  */
 export function useEditorSession(tourId: string) {
   return useMutation({
-    mutationFn: (pageUrl: string) => createEditorSession(tourId, pageUrl, "edit"),
+    mutationFn: ({ pageUrl, mode }: { pageUrl: string; mode: "edit" | "preview" }) =>
+      createEditorSession(tourId, pageUrl, mode),
   });
 }
 

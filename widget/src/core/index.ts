@@ -30,6 +30,8 @@ type CoreApi = {
   version: string;
   config?: { publicKey: string; apiUrl: string };
   boot?: WidgetConfig;
+  /** Предпросмотр владельца: тур проходится, но следов не оставляет. */
+  preview?: boolean;
   start?: () => void;
   stop?: () => void;
 };
@@ -67,6 +69,16 @@ function placementOf(value: string): Placement {
   return SIDES.includes(value) ? (value as Placement) : "auto";
 }
 
+/**
+ * Аналитика предпросмотра: её нет.
+ *
+ * Прогоны владельца портили бы его же воронку — именно ради этого у токена
+ * редактора есть режим (ADR-0004, §7.2 docs/vision.md).
+ */
+function silentAnalytics(): Pick<ReturnType<typeof createAnalytics>, "track" | "stop"> {
+  return { track: () => {}, stop: () => {} };
+}
+
 export function stop(): void {
   active?.stop();
   active = null;
@@ -86,9 +98,12 @@ export async function start(target: Window = window): Promise<void> {
     stop();
 
     const doc = target.document;
-    const storage = openStorage(target);
+    const preview = api?.preview === true;
+    // В предпросмотре хранилище не трогаем вовсе: пройденный владельцем тур
+    // не должен ни запоминаться, ни мешать посетителю на этом же браузере.
+    const storage = preview ? null : openStorage(target);
     const progress = createProgressStore(api?.config?.publicKey ?? "unknown", storage);
-    if (!progress.persistent) {
+    if (!preview && !progress.persistent) {
       // Тур покажется ещё раз — деградация, а не поломка (§3.3 docs/idea.md).
       report("storage_unavailable", "прогресс живёт до перезагрузки страницы");
     }
@@ -99,12 +114,14 @@ export async function start(target: Window = window): Promise<void> {
       return;
     }
 
-    const analytics = createAnalytics({
-      view: target,
-      apiUrl: api?.config?.apiUrl ?? "",
-      publicKey: api?.config?.publicKey ?? "unknown",
-      storage,
-    });
+    const analytics = preview
+      ? silentAnalytics()
+      : createAnalytics({
+          view: target,
+          apiUrl: api?.config?.apiUrl ?? "",
+          publicKey: api?.config?.publicKey ?? "unknown",
+          storage,
+        });
     // С этого момента ошибки уходят не только в консоль: своей консоли
     // у нас на чужом сайте нет (§7.1 docs/vision.md).
     setErrorSink((code) => analytics.track({ type: "widget_error", error_code: code }));

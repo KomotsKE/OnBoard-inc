@@ -54,6 +54,8 @@ type OnBoardGlobal = {
   config: LoaderConfig;
   /** Токен режима редактора: его читает `editor.js` при старте. */
   editor?: { token: string };
+  /** Предпросмотр: ядро проходит тур, но не пишет ни событий, ни прогресса. */
+  preview?: boolean;
   /** Конфиг для ядра: оно читает его при старте, а не запрашивает снова. */
   boot?: WidgetConfig;
   /** Появляются вместе с ядром (§6 docs/conventions.md). */
@@ -155,11 +157,20 @@ function initialUrl(target: Window): string {
  * в этом режиме. Он же и есть проверка токена: без валидного токена редактор
  * не грузится вовсе.
  */
+export type EditorSessionState = {
+  mode: "edit" | "preview";
+  editor_url: string;
+  core_url: string;
+  tour: { id: string; name: string };
+  steps: WidgetStep[];
+  theme: Record<string, string | number>;
+};
+
 export async function fetchEditorState(
   config: LoaderConfig,
   token: string,
   timeoutMs: number = CONFIG_TIMEOUT_MS,
-): Promise<{ editor_url: string } | null> {
+): Promise<EditorSessionState | null> {
   const params = new URLSearchParams({ token });
   const url = `${config.apiUrl}/v1/public/editor/session?${params.toString()}`;
   const abort = new AbortController();
@@ -170,7 +181,7 @@ export async function fetchEditorState(
       console.debug("[OnBoard] сессия редактора недействительна");
       return null;
     }
-    return (await response.json()) as { editor_url: string };
+    return (await response.json()) as EditorSessionState;
   } catch (error) {
     report("editor_request_failed", error);
     return null;
@@ -294,7 +305,15 @@ export function createApplier(target: Window, api: OnBoardGlobal): () => Promise
   };
 }
 
-/** Проверяет токен и подгружает `editor.js`; при отказе страница остаётся как была. */
+/**
+ * Проверяет токен и запускает нужный режим; при отказе страница остаётся
+ * как была.
+ *
+ * Предпросмотр проходит тур обычным ядром: отдельная реализация показа
+ * внутри редактора означала бы вторую правду о том, как выглядит тур.
+ * Тур берётся из ответа сессии, а не из публичного конфига, — иначе
+ * черновик, ради которого превью и нужно, было бы не посмотреть.
+ */
 async function startEditorMode(
   target: Window,
   api: OnBoardGlobal,
@@ -304,6 +323,19 @@ async function startEditorMode(
   if (state === null) {
     return;
   }
+
+  if (state.mode === "preview") {
+    api.preview = true;
+    api.boot = {
+      core_url: state.core_url,
+      project: { theme: state.theme },
+      // show_once снимается: владелец смотрит превью столько раз, сколько нужно.
+      tour: { id: state.tour.id, name: state.tour.name, show_once: false, steps: state.steps },
+    };
+    loadCore(target.document, state.core_url);
+    return;
+  }
+
   api.editor = { token };
   loadCore(target.document, state.editor_url);
 }

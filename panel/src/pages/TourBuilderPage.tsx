@@ -87,7 +87,11 @@ export function TourBuilderPage() {
               Не удалось сохранить порядок — вернули как было.
             </p>
           ) : null}
-          <PickOnSite tourId={tourId} origins={project.data?.allowed_origins ?? []} />
+          <PickOnSite
+            tourId={tourId}
+            origins={project.data?.allowed_origins ?? []}
+            hasSteps={steps.length > 0}
+          />
           <AddStep
             pending={createStep.isPending}
             failed={createStep.isError}
@@ -147,9 +151,36 @@ export function defaultPageUrl(origins: string[]): string {
  * до запроса: открытая из ответа сервера, она была бы заблокирована браузером
  * как всплывающее окно без действия пользователя.
  */
-function PickOnSite({ tourId, origins }: { tourId: string; origins: string[] }) {
+function PickOnSite({
+  tourId,
+  origins,
+  hasSteps,
+}: {
+  tourId: string;
+  origins: string[];
+  hasSteps: boolean;
+}) {
   const session = useEditorSession(tourId);
   const [pageUrl, setPageUrl] = useState(defaultPageUrl(origins));
+
+  /** Вкладка открывается до ответа сервера, иначе браузер её заблокирует. */
+  function open(mode: "edit" | "preview"): void {
+    const tab = window.open("about:blank", "_blank");
+    session.mutate(
+      { pageUrl: pageUrl.trim(), mode },
+      {
+        onSuccess: ({ url }) => {
+          if (!tab) {
+            return;
+          }
+          // Чужая страница не должна иметь ссылки на вкладку панели.
+          tab.opener = null;
+          tab.location.replace(url);
+        },
+        onError: () => tab?.close(),
+      },
+    );
+  }
 
   if (origins.length === 0) {
     return (
@@ -165,18 +196,7 @@ function PickOnSite({ tourId, origins }: { tourId: string; origins: string[] }) 
       data-testid="pick-on-site"
       onSubmit={(event) => {
         event.preventDefault();
-        const tab = window.open("about:blank", "_blank");
-        session.mutate(pageUrl.trim(), {
-          onSuccess: ({ url }) => {
-            if (!tab) {
-              return;
-            }
-            // Чужая страница не должна иметь ссылки на вкладку панели.
-            tab.opener = null;
-            tab.location.replace(url);
-          },
-          onError: () => tab?.close(),
-        });
+        open("edit");
       }}
     >
       <label htmlFor="page-url">Страница сайта, на которой выбирать элементы</label>
@@ -190,10 +210,19 @@ function PickOnSite({ tourId, origins }: { tourId: string; origins: string[] }) 
         <button type="submit" disabled={session.isPending || !pageUrl.trim()}>
           {session.isPending ? "Открываем…" : "Выбрать на сайте"}
         </button>
+        <button
+          type="button"
+          data-testid="preview"
+          disabled={session.isPending || !pageUrl.trim() || !hasSteps}
+          onClick={() => open("preview")}
+        >
+          Превью
+        </button>
       </div>
       <p className="install__hint">
         Откроется в новой вкладке на 15 минут. Шаги, добавленные там, появятся здесь,
-        когда вернётесь.
+        когда вернётесь. «Превью» проходит тур целиком — в аналитику такой проход
+        не попадает.
       </p>
       {session.isError ? (
         <p role="alert" data-testid="pick-error">
