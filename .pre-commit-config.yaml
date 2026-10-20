@@ -52,6 +52,15 @@ repos:
         files: ^docs/tasklist\.md$
         pass_filenames: false
 
+      # Цвет мимо токена делает тему декорацией: правка значения не доходит
+      # до правила, и экран остаётся прежним.
+      - id: styles-tokens
+        name: токены оформления на месте
+        entry: python3 scripts/check-styles.py
+        language: system
+        files: ^panel/src/styles\.css$
+        pass_filenames: false
+
       # Документ, советующий несуществующую команду, хуже отсутствующего.
       - id: docs-commands
         name: команды в документации существуют

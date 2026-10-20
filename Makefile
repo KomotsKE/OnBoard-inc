@@ -46,7 +46,8 @@ test: ## pytest + vitest панели и виджета
 	docker compose run --rm --no-deps panel npm test
 	docker compose run --rm --no-deps widget npm test
 
-lint: ## ruff + tsc панели и виджета
+lint: ## ruff + tsc панели и виджета + контракт токенов
+	python3 scripts/check-styles.py
 	docker compose run --rm --no-deps api sh -c "ruff check . && ruff format --check ."
 	docker compose run --rm --no-deps panel npm run typecheck
 	docker compose run --rm --no-deps widget npm run typecheck

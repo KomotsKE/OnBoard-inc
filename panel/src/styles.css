@@ -1,17 +1,84 @@
-/* Токены оформления. Имена переменных подсказки совпадают с виджетом:
-   превью в панели обязано выглядеть ровно так же, как подсказка на сайте
-   клиента (§4.6 docs/vision.md). Контраст проверен по WCAG 2.2. */
+/* Токены оформления панели. Источник значений — дизайн-система OnBoard;
+   переносятся руками: сборочного шага из JSON в CSS нет намеренно, значений
+   два десятка и меняются они редко. Контраст проверен по WCAG 2.2. */
 :root {
-  --onboard-primary: #2563eb; /* белый текст на нём — 5,17 : 1 */
-  --onboard-text: #0f172a; /* на белом — 17,85 : 1 */
-  --onboard-text-muted: #475569; /* на белом — 8,06 : 1 */
-  --onboard-backdrop: rgb(0 0 0 / 55%);
-  --onboard-radius: 8px;
-  --onboard-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light dark;
 
-  --panel-border: #e2e8f0;
-  --panel-bg: #ffffff;
-  --panel-space: 16px;
+  --surface: #ffffff;
+  --surface-muted: #f8fafc;
+  --surface-sunken: #f1f5f9;
+  --ink: #0f172a; /* на surface — 17,85 : 1 */
+  --ink-muted: #475569; /* на surface — 8,06 : 1 */
+  --ink-subtle: #64748b; /* на surface — 4,76 : 1, ниже не опускаться */
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --accent: #2563eb; /* accent-ink на нём — 5,17 : 1 */
+  --accent-ink: #ffffff;
+  --success: #166534; /* на success-soft — 7,0 : 1 */
+  --success-soft: #dcfce7;
+  --warning: #b45309; /* на surface — 5,6 : 1 */
+  --danger: #b91c1c; /* на surface — 6,8 : 1 */
+  --danger-soft: #fef2f2;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-tooltip: 0 12px 32px rgba(15, 23, 42, 0.28);
+
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Превью подсказки показывает чужой сайт, где темы панели нет. Поэтому
+     значения виджета зафиксированы и в тёмной теме не переопределяются —
+     иначе превью перестанет совпадать с тем, что увидит посетитель
+     (§4.6 docs/vision.md). */
+  --onboard-primary: #2563eb;
+  --onboard-text: #0f172a;
+  --onboard-text-muted: #475569;
+  --onboard-tip: #ffffff;
+  --onboard-on-primary: #ffffff;
+  --onboard-dot: #78839a;
+  --onboard-backdrop: rgb(0 0 0 / 55%);
+  --onboard-radius: var(--radius-md);
+  --onboard-font: var(--font-sans);
+
+  /* Прежние имена панели остаются псевдонимами: правка одного значения
+     не должна требовать обхода всех правил. */
+  --panel-border: var(--border);
+  --panel-bg: var(--surface);
+  --panel-space: var(--space-4);
+}
+
+/* Тёмная тема идёт за системной настройкой: переключателя в панели нет,
+   и выдумывать его ради одной настройки не стоит. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: #0b1220;
+    --surface-muted: #111a2b;
+    --surface-sunken: #0f172a;
+    --ink: #f8fafc;
+    --ink-muted: #a8b6cc;
+    --ink-subtle: #8b9ab3;
+    --border: #1e293b;
+    --border-strong: #334155;
+    --accent: #60a5fa; /* accent-ink на нём — 7,4 : 1 */
+    --accent-ink: #0b1220;
+    --success: #4ade80;
+    --success-soft: #0f2a19;
+    --warning: #fbbf24;
+    --danger: #f87171;
+    --danger-soft: #2a1414;
+  }
 }
 
 * {
@@ -21,7 +88,7 @@
 body {
   margin: 0;
   font-family: var(--onboard-font);
-  color: var(--onboard-text);
+  color: var(--ink);
   background: var(--panel-bg);
 }
 
@@ -39,11 +106,11 @@ main {
 }
 
 a {
-  color: var(--onboard-primary);
+  color: var(--accent);
 }
 
 p {
-  color: var(--onboard-text-muted);
+  color: var(--ink-muted);
   line-height: 1.5;
 }
 
@@ -74,7 +141,7 @@ p {
 }
 
 .auth input:focus-visible {
-  outline: 2px solid var(--onboard-primary);
+  outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 
@@ -86,7 +153,7 @@ p {
 /* #B91C1C на белом — 6,8 : 1 по WCAG 2.2. */
 .auth__error {
   margin: var(--panel-space) 0 0;
-  color: #b91c1c;
+  color: var(--danger);
 }
 
 .auth button[type="submit"] {
@@ -94,8 +161,8 @@ p {
   padding: 10px 16px;
   border: 0;
   border-radius: var(--onboard-radius);
-  background: var(--onboard-primary);
-  color: #ffffff;
+  background: var(--accent);
+  color: var(--accent-ink);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
@@ -109,7 +176,7 @@ p {
 /* Шапка: почта владельца прижата вправо, рядом выход */
 .layout__owner {
   margin-left: auto;
-  color: var(--onboard-text-muted);
+  color: var(--ink-muted);
   font-size: 14px;
 }
 
@@ -119,7 +186,7 @@ p {
   border-radius: var(--onboard-radius);
   background: transparent;
   font: inherit;
-  color: var(--onboard-text-muted);
+  color: var(--ink-muted);
   cursor: pointer;
 }
 
@@ -187,14 +254,14 @@ p {
   border-radius: var(--onboard-radius);
   background: transparent;
   font: inherit;
-  color: var(--onboard-text-muted);
+  color: var(--ink-muted);
   cursor: pointer;
 }
 
 .projects__new-row button[type="submit"] {
-  border-color: var(--onboard-primary);
-  background: var(--onboard-primary);
-  color: #ffffff;
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
   font-weight: 600;
 }
 
@@ -208,7 +275,7 @@ p {
   padding: var(--panel-space);
   border: 1px solid var(--panel-border);
   border-radius: var(--onboard-radius);
-  background: #fef2f2;
+  background: var(--danger-soft);
 }
 
 .layout__switcher {
@@ -216,7 +283,7 @@ p {
   border: 1px solid var(--panel-border);
   border-radius: var(--onboard-radius);
   font: inherit;
-  color: var(--onboard-text);
+  color: var(--ink);
   background: transparent;
 }
 
@@ -242,7 +309,7 @@ p {
   margin: 0 0 10px;
   padding: 12px;
   overflow-x: auto;
-  background: #f8fafc;
+  background: var(--surface-muted);
   border-radius: var(--onboard-radius);
   font-size: 13px;
   line-height: 1.5;
@@ -251,12 +318,12 @@ p {
 .install__status {
   margin-top: var(--panel-space);
   font-weight: 600;
-  color: var(--onboard-text) !important;
+  color: var(--ink) !important;
 }
 
 /* #B91C1C на белом — 6,8 : 1 по WCAG 2.2. */
 .install__warning {
-  color: #b91c1c !important;
+  color: var(--danger) !important;
 }
 
 .install__origins {
@@ -276,7 +343,7 @@ p {
 .install__hint {
   margin-left: 10px;
   font-size: 13px;
-  color: var(--onboard-text-muted);
+  color: var(--ink-muted);
 }
 
 .install__label {
@@ -296,7 +363,7 @@ p {
   border-radius: var(--onboard-radius);
   background: transparent;
   font: inherit;
-  color: var(--onboard-text-muted);
+  color: var(--ink-muted);
   cursor: pointer;
 }
 
@@ -305,15 +372,15 @@ p {
   display: inline-block;
   padding: 2px 8px;
   border-radius: 999px;
-  background: #f1f5f9;
+  background: var(--surface-sunken);
   font-size: 13px;
-  color: var(--onboard-text-muted);
+  color: var(--ink-muted);
 }
 
 /* #166534 на #dcfce7 — 7,0 : 1 по WCAG 2.2. */
 .tours__badge--live {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--success-soft);
+  color: var(--success);
 }
 
 /* Конструктор тура */
@@ -349,22 +416,22 @@ p {
 }
 
 .steps__item--selected {
-  border-color: var(--onboard-primary);
+  border-color: var(--accent);
 }
 
 .steps__handle {
   padding: 0 10px;
   border: 0;
   border-right: 1px solid var(--panel-border);
-  background: #f8fafc;
+  background: var(--surface-muted);
   border-radius: var(--onboard-radius) 0 0 var(--onboard-radius);
   font: inherit;
-  color: var(--onboard-text-muted);
+  color: var(--ink-muted);
   cursor: grab;
 }
 
 .steps__handle:focus-visible {
-  outline: 2px solid var(--onboard-primary);
+  outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
 
@@ -387,13 +454,13 @@ p {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #f1f5f9;
+  background: var(--surface-sunken);
   font-size: 13px;
 }
 
 .steps__title code {
   margin-left: auto;
-  color: var(--onboard-text-muted);
+  color: var(--ink-muted);
   font-size: 12px;
 }
 
@@ -436,10 +503,10 @@ p {
   max-width: 320px;
   padding: 16px;
   border-radius: var(--onboard-radius);
-  background: #ffffff;
+  background: var(--onboard-tip);
   color: var(--onboard-text);
   font: 14px/1.45 var(--onboard-font);
-  box-shadow: 0 12px 32px rgb(15 23 42 / 28%);
+  box-shadow: var(--shadow-tooltip);
 }
 
 .preview__title {
@@ -473,7 +540,7 @@ p {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #78839a;
+  background: var(--onboard-dot);
 }
 
 .preview__dot[data-current] {
@@ -481,14 +548,14 @@ p {
 }
 
 .preview__ghost {
-  color: #475569;
+  color: var(--onboard-text-muted);
 }
 
 .preview__primary {
   padding: 8px 14px;
   border-radius: var(--onboard-radius);
   background: var(--onboard-primary);
-  color: #ffffff;
+  color: var(--onboard-on-primary);
   font-weight: 600;
 }
 
@@ -508,13 +575,13 @@ p {
   border-radius: 999px;
   background: transparent;
   font: inherit;
-  color: var(--onboard-text-muted);
+  color: var(--ink-muted);
   cursor: pointer;
 }
 
 .funnel__range button[aria-pressed="true"] {
-  border-color: var(--onboard-primary);
-  color: var(--onboard-primary);
+  border-color: var(--accent);
+  color: var(--accent);
   font-weight: 600;
 }
 
@@ -540,13 +607,13 @@ p {
   margin: 0 !important;
   font-size: 26px;
   font-weight: 600;
-  color: var(--onboard-text) !important;
+  color: var(--ink) !important;
 }
 
 .totals__share {
   font-size: 15px;
   font-weight: 400;
-  color: var(--onboard-text-muted);
+  color: var(--ink-muted);
 }
 
 .funnel__steps {
@@ -574,7 +641,7 @@ p {
 
 .funnel__bar {
   height: 18px;
-  background: #f1f5f9;
+  background: var(--surface-sunken);
   border-radius: 4px;
 }
 
@@ -583,12 +650,12 @@ p {
   height: 100%;
   min-width: 2px;
   border-radius: 4px;
-  background: var(--onboard-primary);
+  background: var(--accent);
 }
 
 /* Статусный цвет: контраст к белому 5,6 : 1, рядом знак и подпись. */
 .funnel__fill--problem {
-  background: #b45309;
+  background: var(--warning);
 }
 
 /* «Завершили» — та же величина того же ряда, поэтому тот же цвет: строку
@@ -596,18 +663,18 @@ p {
    палитры показал, что при протанопии он отличается от статусного
    оранжевого на ΔE 4.4, то есть не отличается вовсе. */
 .funnel__fill--finish {
-  background: var(--onboard-primary);
+  background: var(--accent);
 }
 
 .funnel__value {
   font-variant-numeric: tabular-nums;
   font-size: 14px;
-  color: var(--onboard-text-muted);
+  color: var(--ink-muted);
 }
 
 .funnel__flag {
   grid-column: 1 / -1;
-  color: #b45309;
+  color: var(--warning);
   font-size: 13px;
 }
 
@@ -621,7 +688,7 @@ p {
 }
 
 .funnel__issues li {
-  color: var(--onboard-text-muted);
+  color: var(--ink-muted);
   font-size: 14px;
   line-height: 1.6;
 }
@@ -646,7 +713,7 @@ p {
 
 /* Общие состояния экранов */
 .state {
-  color: var(--onboard-text-muted);
+  color: var(--ink-muted);
 }
 
 .state button {
