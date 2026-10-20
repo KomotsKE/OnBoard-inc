@@ -4,7 +4,6 @@ import { Link, useParams } from "react-router-dom";
 import type { TourListItem, UrlMatch } from "../api/tours";
 import { useCreateTour, useDeleteTour, useTourPublication, useTours } from "../hooks/useTours";
 import { Empty, ErrorState, Loading } from "../components/States";
-import { plural } from "../text";
 
 /**
  * S7 docs/screens.md — список туров проекта.
@@ -63,11 +62,34 @@ export function ToursPage() {
           показа.
         </Empty>
       ) : (
-        <ul className="projects">
-          {tours.data.map((tour) => (
-            <TourRow key={tour.id} projectId={projectId} tour={tour} />
-          ))}
-        </ul>
+        <div className="table">
+          <table>
+            <caption className="visually-hidden">Туры проекта</caption>
+            <thead>
+              <tr>
+                <th scope="col">Тур</th>
+                <th scope="col">Где показывается</th>
+                <th scope="col" className="table__number">
+                  Шагов
+                </th>
+                <th scope="col" className="table__number">
+                  Запусков 7д
+                </th>
+                <th scope="col" className="table__number">
+                  Завершение
+                </th>
+                <th scope="col">
+                  <span className="visually-hidden">Действия</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {tours.data.map((tour) => (
+                <TourRow key={tour.id} projectId={projectId} tour={tour} />
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   );
@@ -90,10 +112,9 @@ export function matchLabel(match: UrlMatch): string {
 export function completionLabel(tour: TourListItem): string {
   if (tour.runs_7d === 0) {
     // «0 %» при нуле запусков — не ноль, а отсутствие данных.
-    return "за 7 дней запусков не было";
+    return "—";
   }
-  const percent = Math.round(tour.completion_rate_7d * 100);
-  return `${plural(tour.runs_7d, ["запуск", "запуска", "запусков"])} за 7 дней, дошли до конца ${percent} %`;
+  return `${Math.round(tour.completion_rate_7d * 100)} %`;
 }
 
 function TourRow({ projectId, tour }: { projectId: string; tour: TourListItem }) {
@@ -101,33 +122,51 @@ function TourRow({ projectId, tour }: { projectId: string; tour: TourListItem })
   const remove = useDeleteTour(projectId);
   const [confirming, setConfirming] = useState(false);
   const published = tour.status === "published";
+  const blocked = !published && tour.steps_count === 0;
 
   return (
-    <li className="projects__card" data-testid="tour-row">
-      <h2>
-        <Link to={`/projects/${projectId}/tours/${tour.id}`}>{tour.name}</Link>
-      </h2>
-      <p>
+    <tr data-testid="tour-row">
+      <td>
+        <Link className="table__title" to={`/projects/${projectId}/tours/${tour.id}`}>
+          {tour.name}
+        </Link>{" "}
         <span className={published ? "tours__badge tours__badge--live" : "tours__badge"}>
-          {published ? "Опубликован" : "Черновик"}
-        </span>{" "}
-        · {plural(tour.steps_count, ["шаг", "шага", "шагов"])} · {matchLabel(tour.url_match)}
-      </p>
-      <p data-testid="tour-metrics">{completionLabel(tour)}</p>
-
-      <p className="projects__links">
+          {published ? "опубликован" : "черновик"}
+        </span>
+        {blocked ? (
+          <span className="table__note" data-testid="tour-no-steps">
+            Чтобы опубликовать, добавьте хотя бы один шаг в конструкторе.
+          </span>
+        ) : null}
+        {confirming ? (
+          <span className="table__confirm" data-testid="tour-confirm">
+            Удалить тур вместе с шагами и аналитикой?{" "}
+            <button type="button" onClick={() => remove.mutate(tour.id)}>
+              Удалить
+            </button>{" "}
+            <button type="button" onClick={() => setConfirming(false)}>
+              Отмена
+            </button>
+          </span>
+        ) : null}
+      </td>
+      <td>{matchLabel(tour.url_match)}</td>
+      <td className="table__number">{tour.steps_count}</td>
+      {/* Числа рядом друг с другом: сравнение туров — главное, ради чего
+          список стал таблицей (S7 docs/screens.md). */}
+      <td className="table__number" data-testid="tour-metrics">
+        {tour.runs_7d === 0 ? "—" : tour.runs_7d}
+      </td>
+      <td className="table__number">{completionLabel(tour)}</td>
+      <td className="table__actions">
         <Link to={`/projects/${projectId}/tours/${tour.id}`}>Конструктор</Link>
         <Link to={`/projects/${projectId}/tours/${tour.id}/analytics`}>Аналитика</Link>
         <button
           type="button"
-          disabled={publication.isPending || (!published && tour.steps_count === 0)}
+          disabled={publication.isPending || blocked}
           // Публикация тура без шагов отклоняется сервером (422), но кнопку
           // лучше выключить заранее и сказать почему, чем показать ошибку.
-          title={
-            !published && tour.steps_count === 0
-              ? "Сначала добавьте хотя бы один шаг в конструкторе"
-              : undefined
-          }
+          title={blocked ? "Сначала добавьте хотя бы один шаг в конструкторе" : undefined}
           onClick={() => publication.mutate({ id: tour.id, published: !published })}
         >
           {published ? "Снять с публикации" : "Опубликовать"}
@@ -135,25 +174,7 @@ function TourRow({ projectId, tour }: { projectId: string; tour: TourListItem })
         <button type="button" className="projects__delete" onClick={() => setConfirming(true)}>
           Удалить
         </button>
-      </p>
-
-      {!published && tour.steps_count === 0 ? (
-        <p className="install__hint" data-testid="tour-no-steps">
-          Чтобы опубликовать, добавьте хотя бы один шаг в конструкторе.
-        </p>
-      ) : null}
-
-      {confirming ? (
-        <p className="projects__confirm" data-testid="tour-confirm">
-          Удалить тур «{tour.name}» вместе с шагами и его аналитикой?{" "}
-          <button type="button" onClick={() => remove.mutate(tour.id)}>
-            Удалить
-          </button>{" "}
-          <button type="button" onClick={() => setConfirming(false)}>
-            Отмена
-          </button>
-        </p>
-      ) : null}
-    </li>
+      </td>
+    </tr>
   );
 }

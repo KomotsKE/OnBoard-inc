@@ -48,17 +48,17 @@ test("публикация делает тур видимым виджету, с
   await openTours(page);
   const row = page.locator('[data-testid="tour-row"]').filter({ hasText: DRAFT });
 
-  await expect(row).toContainText("Черновик");
+  await expect(row).toContainText(/черновик/i);
   expect(await tourForPage(page, "/panel-check")).toBe("нет тура");
 
   await row.getByRole("button", { name: "Опубликовать" }).click();
-  await expect(row).toContainText("Опубликован");
+  await expect(row).toContainText(/опубликован/i);
 
   expect(await tourForPage(page, "/panel-check")).toBe(DRAFT);
 
   // Возвращаем как было: демо-данные общие для всех сценариев.
   await row.getByRole("button", { name: "Снять с публикации" }).click();
-  await expect(row).toContainText("Черновик");
+  await expect(row).toContainText(/черновик/i);
   expect(await tourForPage(page, "/panel-check")).toBe("нет тура");
 });
 
@@ -70,16 +70,16 @@ test("список показывает запуски и долю дошедш�
 
   // Абсолютные числа не проверяем: сценарии виджета проходят демо-тур
   // по-настоящему и честно добавляют прогоны — это и есть признак того,
-  // что события доезжают. Проверяем формулировку и то, что цифры живые.
-  const metrics = page
-    .locator('[data-testid="tour-row"]')
-    .filter({ hasText: "Знакомство" })
-    .getByTestId("tour-metrics");
-  await expect(metrics).toHaveText(/\d+ запуск\S* за 7 дней, дошли до конца \d+ %/);
+  // что события доезжают. Проверяем, что цифры живые и стоят столбцами:
+  // подписи «запусков за 7 дней» ушли в заголовки таблицы.
+  const live = page.locator('[data-testid="tour-row"]').filter({ hasText: "Знакомство" });
+  await expect(live.getByTestId("tour-metrics")).toHaveText(/^\d+$/);
+  await expect(live.locator("td.table__number").last()).toHaveText(/^\d+ %$/);
 
   // У тура, который никто не проходил, не «0 %», а отсутствие данных.
   const draft = page.locator('[data-testid="tour-row"]').filter({ hasText: DRAFT });
-  await expect(draft.getByTestId("tour-metrics")).toHaveText("за 7 дней запусков не было");
+  await expect(draft.getByTestId("tour-metrics")).toHaveText("—");
+  await expect(draft.locator("td.table__number").last()).toHaveText("—");
 
   await expect(
     page.locator('[data-testid="tour-row"]').filter({ hasText: "Знакомство" }),
@@ -95,7 +95,8 @@ test("тур без шагов опубликовать нельзя, и вид�
   await page.getByRole("button", { name: "Создать" }).click();
 
   const row = page.locator('[data-testid="tour-row"]').filter({ hasText: name });
-  await expect(row).toContainText("0 шагов");
+  // Столбец «Шагов» — число: подпись стоит в заголовке таблицы.
+  await expect(row.locator("td.table__number").first()).toHaveText("0");
   await expect(row.getByRole("button", { name: "Опубликовать" })).toBeDisabled();
   await expect(row.getByTestId("tour-no-steps")).toBeVisible();
 

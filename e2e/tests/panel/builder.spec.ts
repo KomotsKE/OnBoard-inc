@@ -83,7 +83,7 @@ test("тур из трёх шагов: сборка, порядок перета
   await setTitle(page, 2, "Третий");
 
   await page.getByRole("button", { name: "Опубликовать" }).click();
-  await expect(page.getByText("Опубликован")).toBeVisible();
+  await expect(page.getByText(/опубликован/i).first()).toBeVisible();
 
   const key = "pk_00000000000000000000000000000001";
   expect(await stepsFromConfig(page, key)).toEqual(["Первый", "Второй", "Третий"]);

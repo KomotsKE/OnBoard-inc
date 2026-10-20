@@ -92,7 +92,7 @@ test("от регистрации до пройденного тура на чу
   }
 
   await page.getByRole("button", { name: "Опубликовать" }).click();
-  await expect(page.getByText("Опубликован")).toBeVisible();
+  await expect(page.getByText(/опубликован/i).first()).toBeVisible();
 
   // 5. Чужая страница: вставляем тег и проходим тур целиком.
   const stand = await page.context().newPage();

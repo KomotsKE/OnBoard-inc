@@ -36,18 +36,18 @@ describe("условие показа словами", () => {
   });
 });
 
-describe("метрики за 7 дней", () => {
+describe("завершение за 7 дней", () => {
   it("при нуле запусков не показывает ноль процентов", () => {
     // «0 %» при отсутствии запусков — это не результат, а отсутствие данных.
-    expect(completionLabel(tour({ runs_7d: 0 }))).toBe("за 7 дней запусков не было");
+    // В таблице место узкое, поэтому отсутствие данных — прочерк.
+    expect(completionLabel(tour({ runs_7d: 0 }))).toBe("—");
   });
 
-  it("показывает запуски и долю дошедших до конца", () => {
-    expect(completionLabel(tour({ runs_7d: 20, completion_rate_7d: 0.6 }))).toBe(
-      "20 запусков за 7 дней, дошли до конца 60 %",
-    );
-    expect(completionLabel(tour({ runs_7d: 1, completion_rate_7d: 1 }))).toBe(
-      "1 запуск за 7 дней, дошли до конца 100 %",
-    );
+  it("показывает долю дошедших до конца", () => {
+    // Слова «запусков за 7 дней» ушли в заголовки столбцов: повторять их
+    // в каждой строке — шум.
+    expect(completionLabel(tour({ runs_7d: 20, completion_rate_7d: 0.6 }))).toBe("60 %");
+    expect(completionLabel(tour({ runs_7d: 1, completion_rate_7d: 1 }))).toBe("100 %");
+    expect(completionLabel(tour({ runs_7d: 7, completion_rate_7d: 0.355 }))).toBe("36 %");
   });
 });

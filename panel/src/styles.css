@@ -315,7 +315,110 @@ p {
   font: inherit;
 }
 
-.projects__new-row button,
+/* Текст только для экранного диктора: заголовок таблицы и подписи, которые
+   зрячему понятны из вёрстки. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Таблица туров: их сравнивают между собой, поэтому числа стоят столбцами,
+   а не внутри карточек (S7 docs/screens.md). */
+.table {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow-x: auto;
+}
+
+.table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table th {
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-muted);
+  color: var(--ink-muted);
+  font-weight: 600;
+  text-align: left;
+}
+
+.table td {
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.table__number {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.table__title {
+  font-weight: 600;
+}
+
+.table__note,
+.table__confirm {
+  display: block;
+  margin-top: var(--space-2);
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+
+.table__actions {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+/* Конструктор: шаги, редактор шага и его вид — рядом, а не друг под другом.
+   Правка текста и её результат должны быть видны одновременно. */
+.builder__head {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+  flex-wrap: wrap;
+  margin-bottom: var(--space-5);
+}
+
+.builder__about {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.builder__back {
+  margin: 0 0 var(--space-2);
+}
+
+.builder__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.builder__col {
+  min-width: 0;
+}
+
+/* На узком экране колонки встают друг под друга: конструктор остаётся
+   рабочим на ноутбуке с открытым сайтом рядом. */
+@media (max-width: 1100px) {
+  .builder__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* Карточка проекта: слева кто это, справа что с ним делать. */
 .projects__row {
   display: flex;
@@ -367,6 +470,7 @@ p {
   text-decoration: none;
 }
 
+.projects__new-row button,
 .projects__delete {
   padding: 8px 14px;
   border: 1px solid var(--panel-border);

@@ -47,15 +47,19 @@ export function TourBuilderPage() {
 
   return (
     <section className="builder">
-      <p>
-        <Link to={`/projects/${projectId}/tours`}>← К списку туров</Link>
-      </p>
-      <h1>{tour.data.name}</h1>
-      <p>
-        <span className={published ? "tours__badge tours__badge--live" : "tours__badge"}>
-          {published ? "Опубликован" : "Черновик"}
-        </span>{" "}
-        · {plural(steps.length, ["шаг", "шага", "шагов"])}{" "}
+      <div className="builder__head">
+        <div className="builder__about">
+          <p className="builder__back">
+            <Link to={`/projects/${projectId}/tours`}>← К списку туров</Link>
+          </p>
+          <h1>{tour.data.name}</h1>
+          <p>
+            <span className={published ? "tours__badge tours__badge--live" : "tours__badge"}>
+              {published ? "опубликован" : "черновик"}
+            </span>{" "}
+            · {plural(steps.length, ["шаг", "шага", "шагов"])}
+          </p>
+        </div>
         <button
           type="button"
           disabled={publication.isPending || (!published && steps.length === 0)}
@@ -63,12 +67,12 @@ export function TourBuilderPage() {
         >
           {published ? "Снять с публикации" : "Опубликовать"}
         </button>
-      </p>
+      </div>
 
       <Settings tourId={tourId} projectId={projectId} match={tour.data.url_match} showOnce={tour.data.show_once} />
 
-      <div className="builder__columns">
-        <div>
+      <div className="builder__grid">
+        <div className="builder__col">
           <h2>Шаги</h2>
           {steps.length === 0 ? (
             <Empty testId="steps-empty">
@@ -101,7 +105,7 @@ export function TourBuilderPage() {
           />
         </div>
 
-        <div>
+        <div className="builder__col">
           {selected ? (
             <>
               <h2>Шаг {steps.indexOf(selected) + 1}</h2>
@@ -120,16 +124,23 @@ export function TourBuilderPage() {
                   Не удалось сохранить шаг. Проверьте селектор и текст.
                 </p>
               ) : null}
-              {project.data ? (
-                // Превью рисуется темой проекта, а не токенами панели:
-                // иначе оно показывает не то, что увидит посетитель.
-                <TooltipPreview
-                  step={selected}
-                  index={steps.indexOf(selected)}
-                  total={steps.length}
-                  theme={project.data.theme}
-                />
-              ) : null}
+            </>
+          ) : null}
+        </div>
+
+        <div className="builder__col">
+          {selected && project.data ? (
+            <>
+              {/* Заголовка у колонки нет намеренно: подпись «Так шаг увидит
+                  посетитель» уже стоит внутри превью, и две подписи подряд
+                  читаются как ошибка. Превью рисуется темой проекта, а не
+                  токенами панели. */}
+              <TooltipPreview
+                step={selected}
+                index={steps.indexOf(selected)}
+                total={steps.length}
+                theme={project.data.theme}
+              />
             </>
           ) : null}
         </div>
