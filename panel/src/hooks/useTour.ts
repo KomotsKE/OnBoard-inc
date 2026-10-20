@@ -1,8 +1,11 @@
 /** Хуки конструктора тура (S8 docs/screens.md). */
 
+import { useEffect } from "react";
+
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 
 import {
+  createEditorSession,
   createStep,
   deleteStep,
   getTour,
@@ -43,6 +46,38 @@ export function useTour(tourId: string) {
     // это нужно (§4.6 docs/vision.md).
     refetchOnWindowFocus: true,
   });
+}
+
+/**
+ * Открытие режима выбора элементов на сайте клиента.
+ *
+ * Мутация без инвалидации кэша: на сервере ничего не меняется, а шаги,
+ * добавленные в соседней вкладке, подхватит `useTour` при возврате фокуса.
+ */
+export function useEditorSession(tourId: string) {
+  return useMutation({
+    mutationFn: (pageUrl: string) => createEditorSession(tourId, pageUrl, "edit"),
+  });
+}
+
+/**
+ * Перезапрос тура при возврате в окно панели.
+ *
+ * `refetchOnWindowFocus` ловит возврат на вкладку — он слушает
+ * `visibilitychange`. Если панель открыта в соседнем окне, а не вкладке,
+ * видимость не меняется и это событие не приходит: переключение окон видно
+ * только по `focus`. Владелец, выбирающий элементы на сайте, оказывается
+ * ровно в одном из этих двух положений.
+ */
+export function useRefreshOnFocus(tourId: string): void {
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    const refresh = (): void => {
+      void queryClient.invalidateQueries({ queryKey: tourKey(tourId) });
+    };
+    window.addEventListener("focus", refresh);
+    return () => window.removeEventListener("focus", refresh);
+  }, [queryClient, tourId]);
 }
 
 export function useUpdateTour(tourId: string, projectId: string) {

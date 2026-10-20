@@ -79,6 +79,23 @@ export function updateTour(
   return request<Tour>(`/tours/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
 }
 
+export type EditorSession = { url: string; expires_in: number };
+
+/**
+ * Сессия режима редактора: ответ несёт готовый адрес страницы с токеном,
+ * его панель открывает в новой вкладке (ADR-0004).
+ */
+export function createEditorSession(
+  tourId: string,
+  pageUrl: string,
+  mode: "edit" | "preview",
+): Promise<EditorSession> {
+  return request(`/tours/${tourId}/editor-session`, {
+    method: "POST",
+    body: JSON.stringify({ page_url: pageUrl, mode }),
+  });
+}
+
 export function createStep(tourId: string, step: StepDraft): Promise<Step> {
   return request<Step>(`/tours/${tourId}/steps`, {
     method: "POST",

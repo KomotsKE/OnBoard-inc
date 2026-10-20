@@ -10,6 +10,8 @@ import { TooltipPreview } from "../components/TooltipPreview";
 import {
   useCreateStep,
   useDeleteStep,
+  useEditorSession,
+  useRefreshOnFocus,
   useReorderSteps,
   useTour,
   useUpdateStep,
@@ -29,6 +31,8 @@ export function TourBuilderPage() {
   const reorder = useReorderSteps(tourId, projectId);
   const publication = useTourPublication(projectId);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Шаги могут появиться в соседней вкладке, в режиме выбора на сайте (T5.5).
+  useRefreshOnFocus(tourId);
 
   if (tour.isPending) {
     return <Loading what="тур" />;
@@ -83,6 +87,7 @@ export function TourBuilderPage() {
               Не удалось сохранить порядок — вернули как было.
             </p>
           ) : null}
+          <PickOnSite tourId={tourId} origins={project.data?.allowed_origins ?? []} />
           <AddStep
             pending={createStep.isPending}
             failed={createStep.isError}
@@ -126,6 +131,77 @@ export function TourBuilderPage() {
         </div>
       </div>
     </section>
+  );
+}
+
+/** Адрес по умолчанию: первый разрешённый домен, дальше владелец правит путь. */
+export function defaultPageUrl(origins: string[]): string {
+  return origins.length > 0 ? `${origins[0]}/` : "";
+}
+
+/**
+ * Выход в режим выбора элементов на сайте клиента (ADR-0004).
+ *
+ * Адрес страницы спрашиваем: в проекте хранятся разрешённые домены, а не
+ * страницы, и угадать нужную нельзя. Вкладка открывается сразу по нажатию,
+ * до запроса: открытая из ответа сервера, она была бы заблокирована браузером
+ * как всплывающее окно без действия пользователя.
+ */
+function PickOnSite({ tourId, origins }: { tourId: string; origins: string[] }) {
+  const session = useEditorSession(tourId);
+  const [pageUrl, setPageUrl] = useState(defaultPageUrl(origins));
+
+  if (origins.length === 0) {
+    return (
+      <p className="install__hint" data-testid="pick-no-origins">
+        Чтобы выбирать элементы прямо на сайте, добавьте его домен на экране «Установка».
+      </p>
+    );
+  }
+
+  return (
+    <form
+      className="projects__new"
+      data-testid="pick-on-site"
+      onSubmit={(event) => {
+        event.preventDefault();
+        const tab = window.open("about:blank", "_blank");
+        session.mutate(pageUrl.trim(), {
+          onSuccess: ({ url }) => {
+            if (!tab) {
+              return;
+            }
+            // Чужая страница не должна иметь ссылки на вкладку панели.
+            tab.opener = null;
+            tab.location.replace(url);
+          },
+          onError: () => tab?.close(),
+        });
+      }}
+    >
+      <label htmlFor="page-url">Страница сайта, на которой выбирать элементы</label>
+      <div className="projects__new-row">
+        <input
+          id="page-url"
+          value={pageUrl}
+          maxLength={2000}
+          onChange={(event) => setPageUrl(event.target.value)}
+        />
+        <button type="submit" disabled={session.isPending || !pageUrl.trim()}>
+          {session.isPending ? "Открываем…" : "Выбрать на сайте"}
+        </button>
+      </div>
+      <p className="install__hint">
+        Откроется в новой вкладке на 15 минут. Шаги, добавленные там, появятся здесь,
+        когда вернётесь.
+      </p>
+      {session.isError ? (
+        <p role="alert" data-testid="pick-error">
+          Не удалось открыть режим выбора. Домен этой страницы должен быть в списке
+          разрешённых на экране «Установка».
+        </p>
+      ) : null}
+    </form>
   );
 }
 
