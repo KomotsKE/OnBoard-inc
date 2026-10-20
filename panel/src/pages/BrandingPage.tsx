@@ -43,13 +43,16 @@ export function BrandingPage() {
   const changed = JSON.stringify(theme) !== JSON.stringify(project.data.theme);
 
   return (
-    <section className="branding">
-      <p>
-        <Link to={`/projects/${projectId}/tours`}>← К турам</Link>
-      </p>
-      <h1>Оформление</h1>
+    <section className="branding page">
+      <div className="page__head">
+        <p>
+          <Link to={`/projects/${projectId}/tours`}>← К турам</Link>
+        </p>
+        <h1>Оформление</h1>
+        <p>Как подсказки выглядят на вашем сайте. Применяется ко всем турам проекта.</p>
+      </div>
 
-      <div className="builder__columns">
+      <div className="split">
         <form
           className="step-form"
           data-testid="branding-form"

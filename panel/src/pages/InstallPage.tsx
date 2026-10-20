@@ -26,23 +26,35 @@ export function InstallPage() {
   }
 
   return (
-    <section className="install">
-      <h1>Установка виджета</h1>
-      <p>
-        Проект «{project.data.name}» · ключ <code>{project.data.public_key}</code>
-      </p>
+    <section className="install page">
+      <div className="page__head">
+        <h1>Установка виджета</h1>
+        <p>
+          Один тег на все страницы сайта. Ставится один раз, дальше туры меняются из
+          панели. Ключ проекта — <code>{project.data.public_key}</code>.
+        </p>
+      </div>
 
       <Status connected={project.data.widget_connected} />
       <Snippet text={snippet.data} failed={snippet.isError} />
-      <Origins projectId={projectId} origins={project.data.allowed_origins} />
-      <Technical snippet={snippet.data} />
+
+      <div className="split">
+        <Origins projectId={projectId} origins={project.data.allowed_origins} />
+        <Technical snippet={snippet.data} />
+      </div>
     </section>
   );
 }
 
 function Status({ connected }: { connected: boolean }) {
   return (
-    <p className="install__status" data-testid="widget-status">
+    <p
+      className={connected ? "banner banner--live" : "banner"}
+      data-testid="widget-status"
+    >
+      {/* Точка — украшение, состояние названо словом: по цвету одному
+          список не читается. */}
+      <span className="banner__dot" aria-hidden="true" />
       {connected
         ? "Виджет подключён: мы видели его запрос с вашего сайта."
         : "Виджет ещё не найден. Вставьте тег и откройте любую страницу сайта — статус обновится."}
@@ -106,17 +118,18 @@ function Origins({ projectId, origins }: { projectId: string; origins: string[] 
           воспользоваться чужой сайт.
         </p>
       ) : (
-        <ul className="install__origins" data-testid="origins">
+        <ul className="chips" data-testid="origins">
           {origins.map((origin) => (
-            <li key={origin}>
+            <li key={origin} className="chips__item">
               <code>{origin}</code>
               <button
                 type="button"
+                className="chips__remove"
                 aria-label={`Убрать ${origin}`}
                 disabled={update.isPending}
                 onClick={() => update.mutate(origins.filter((item) => item !== origin))}
               >
-                Убрать
+                ×
               </button>
             </li>
           ))}

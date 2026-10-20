@@ -328,6 +328,104 @@ p {
   white-space: nowrap;
 }
 
+/* Шапка экрана: заголовок и одна строка о том, что это за экран. */
+.page__head {
+  margin-bottom: var(--space-5);
+}
+
+.page__head h1 {
+  margin: 0 0 var(--space-2);
+}
+
+.page__head p {
+  margin: 0;
+}
+
+/* Две колонки одной сетки: форма шире, превью или справка — уже. */
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Полоса состояния: словом, точка — только украшение. */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-5);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-muted);
+}
+
+.banner__dot {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  border-radius: var(--radius-pill);
+  background: var(--ink-subtle);
+}
+
+.banner--live .banner__dot {
+  background: var(--success);
+}
+
+/* Разрешённые домены: короткие значения, которые чаще убирают, чем читают. */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  list-style: none;
+}
+
+.chips__item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.chips__remove {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink-muted);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.chips__remove:hover {
+  background: var(--surface-sunken);
+  color: var(--ink);
+}
+
+.chips__remove:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* Таблица туров: их сравнивают между собой, поэтому числа стоят столбцами,
    а не внутри карточек (S7 docs/screens.md). */
 .table {
@@ -513,10 +611,11 @@ p {
 
 /* Экран установки */
 .install__block {
-  margin-top: calc(var(--panel-space) * 1.5);
-  padding: var(--panel-space);
-  border: 1px solid var(--panel-border);
-  border-radius: var(--onboard-radius);
+  box-sizing: border-box;
+  margin-bottom: var(--space-5);
+  padding: var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
 }
 
 .install__block h2 {
@@ -688,10 +787,16 @@ p {
   font-size: 12px;
 }
 
+/* Форма шага и форма темы — такие же карточки, как блоки установки:
+   на экране не должно быть двух видов одного и того же блока. */
 .step-form {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  box-sizing: border-box;
+  padding: var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
 }
 
 .step-form label {
