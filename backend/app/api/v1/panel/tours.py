@@ -8,13 +8,15 @@ from typing import Annotated
 
 from fastapi import APIRouter, Query, status
 
-from app.core.deps import OwnedProject, OwnedTour, PanelSession
+from app.core.deps import OwnedProject, OwnedTour, PanelSession, SettingsDep
 from app.core.logging import log_event
 from app.models import Tour
 from app.schemas.analytics import Range, TourAnalytics
+from app.schemas.editor import EditorSession, EditorSessionCreate
 from app.schemas.projects import Page
 from app.schemas.tours import StepRead, TourCreate, TourListItem, TourRead, TourUpdate, UrlMatch
 from app.services import analytics as analytics_service
+from app.services import editor as editor_service
 from app.services import tours as service
 
 router = APIRouter(tags=["tours"])
@@ -123,6 +125,23 @@ async def unpublish_tour(tour: OwnedTour, session: PanelSession) -> TourRead:
     draft = await service.unpublish(session, tour)
     log_event("tour.unpublished", tour_id=str(draft.id), previous_status=previous)
     return _read(draft)
+
+
+@router.post("/v1/tours/{tour_id}/editor-session", response_model=EditorSession)
+async def create_editor_session(
+    body: EditorSessionCreate,
+    tour: OwnedTour,
+    session: PanelSession,
+    settings: SettingsDep,
+) -> EditorSession:
+    """Адрес страницы владельца с токеном редактора: панель открывает его
+    в новой вкладке, виджет видит параметр и грузит `editor.js` (ADR-0004)."""
+    url, expires_in = await editor_service.issue_session(
+        session, settings, tour, page_url=body.page_url, mode=body.mode
+    )
+    # Сам токен в журнал не попадает: §9.3 docs/vision.md.
+    log_event("editor_session.issued", tour_id=str(tour.id), mode=body.mode)
+    return EditorSession(url=url, expires_in=expires_in)
 
 
 @router.get("/v1/tours/{tour_id}/analytics", response_model=TourAnalytics)

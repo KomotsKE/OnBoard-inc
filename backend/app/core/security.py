@@ -9,6 +9,7 @@ import secrets
 from datetime import UTC, datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
+from typing import NamedTuple
 
 import jwt
 from anyio import to_thread
@@ -69,6 +70,40 @@ def read_access_token(settings: Settings, token: str) -> str | None:
         return None
     subject = payload.get("sub")
     return subject if isinstance(subject, str) else None
+
+
+class EditorToken(NamedTuple):
+    """Скоуп токена редактора: один тур и режим (ADR-0004)."""
+
+    tour_id: str
+    mode: str
+
+
+def create_editor_token(settings: Settings, tour_id: str, mode: str) -> tuple[str, int]:
+    """Токен режима редактора и срок его жизни в секундах.
+
+    Подписывается отдельным секретом: токен панели не должен открывать редактор,
+    а токен редактора — панель, даже если один из секретов утечёт.
+    """
+    ttl = timedelta(minutes=settings.editor_token_ttl_min)
+    now = datetime.now(UTC)
+    payload = {"tour": tour_id, "mode": mode, "iat": now, "exp": now + ttl}
+    token = jwt.encode(payload, settings.editor_token_secret.get_secret_value(), algorithm="HS256")
+    return token, int(ttl.total_seconds())
+
+
+def read_editor_token(settings: Settings, token: str) -> EditorToken | None:
+    """Скоуп из токена или None, если токен негоден."""
+    try:
+        payload = jwt.decode(
+            token, settings.editor_token_secret.get_secret_value(), algorithms=["HS256"]
+        )
+    except jwt.PyJWTError:
+        return None
+    tour_id, mode = payload.get("tour"), payload.get("mode")
+    if not isinstance(tour_id, str) or mode not in ("edit", "preview"):
+        return None
+    return EditorToken(tour_id=tour_id, mode=mode)
 
 
 def new_refresh_token() -> str:

@@ -15,6 +15,7 @@ from starlette.routing import Route
 from app.main import app
 
 PASSWORD = "очень-длинный-пароль-владельца"
+SITE = "https://site.example"
 
 # Тела запросов для маршрутов, которые их требуют. Новый маршрут без записи
 # здесь уронит тест полноты ниже.
@@ -29,6 +30,7 @@ BODIES: dict[tuple[str, str], dict | None] = {
     ("GET", "/v1/tours/{tour_id}/analytics"): None,
     ("PATCH", "/v1/tours/{tour_id}"): {"name": "Чужое"},
     ("DELETE", "/v1/tours/{tour_id}"): None,
+    ("POST", "/v1/tours/{tour_id}/editor-session"): {"page_url": f"{SITE}/отчёты"},
     ("POST", "/v1/tours/{tour_id}/publish"): None,
     ("POST", "/v1/tours/{tour_id}/unpublish"): None,
     ("POST", "/v1/tours/{tour_id}/steps"): {"selector": "#цель", "body": "Текст"},
@@ -139,6 +141,12 @@ async def test_own_object_is_accessible(client, two_owners, method, path):
     body = BODIES.get((method, path))
     if (method, path) == ("PUT", "/v1/tours/{tour_id}/steps/order"):
         body = {"step_ids": [step_id]}
+    if (method, path) == ("POST", "/v1/tours/{tour_id}/editor-session"):
+        # Редактор открывается только на домене из allowed_origins, а проект
+        # создаётся с пустым списком (fail closed, §8.1 docs/vision.md).
+        await client.patch(
+            f"/v1/projects/{project_id}", json={"allowed_origins": [SITE]}, headers=owner
+        )
     kwargs = {"headers": owner} | ({"json": body} if body is not None else {})
 
     response = await client.request(method, path.format(**ids), **kwargs)
