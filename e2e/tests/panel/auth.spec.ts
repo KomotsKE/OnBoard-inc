@@ -109,3 +109,33 @@ test("короткий пароль отклоняется до отправки
 
   await expect(page.getByTestId("auth-error")).toBeVisible();
 });
+
+test("экран входа работает без фотографии", async ({ page }) => {
+  // Маршрут ставится до goto: иначе снимок успеет загрузиться.
+  // Вход здесь не выполняется: каждый вход расходует лимит (см. шапку файла).
+  await page.route("**/auth-login.jpg", (route) => route.abort());
+
+  await page.goto("/login");
+
+  await expect(page.getByTestId("auth-photo")).toBeHidden();
+  await expect(page.getByRole("heading", { name: "Вход" })).toBeVisible();
+  await expect(page.getByLabel("Почта")).toBeVisible();
+  await expect(page.getByLabel("Пароль")).toBeVisible();
+
+  const card = page.getByTestId("auth-card");
+  await expect(card).toBeVisible();
+  const box = await card.boundingBox();
+  const viewport = page.viewportSize();
+  expect(box).not.toBeNull();
+  expect(viewport).not.toBeNull();
+  expect(box!.width).toBeGreaterThan(0);
+  expect(box!.height).toBeGreaterThan(0);
+  expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(viewport!.width);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(viewport!.height);
+
+  // Композиция запрещает «стекло»: размытие подложки под карточкой не допускается.
+  const backdrop = await card.evaluate((el) => getComputedStyle(el).backdropFilter);
+  expect(backdrop).toBe("none");
+});

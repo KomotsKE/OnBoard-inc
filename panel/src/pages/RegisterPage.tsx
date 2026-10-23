@@ -1,5 +1,6 @@
 import { Link, Navigate, useNavigate } from "react-router-dom";
 
+import { AuthLayout } from "../components/AuthLayout";
 import { AuthForm } from "../components/AuthForm";
 import { useAuth } from "../components/AuthProvider";
 
@@ -13,17 +14,23 @@ export function RegisterPage() {
   }
 
   return (
-    <AuthForm
-      title="Регистрация"
-      submitLabel="Создать аккаунт"
-      // Требование к длине показываем заранее: узнать о нём из ошибки после
-      // отправки — худший способ.
-      hint="Не короче 15 символов. Требований к составу нет: длина надёжнее."
-      footer={<>Уже есть аккаунт? <Link to="/login">Войдите</Link></>}
-      onSubmit={async (email, password) => {
-        await register(email, password);
-        navigate("/projects", { replace: true });
-      }}
-    />
+    <AuthLayout
+      photo="/auth-register.jpg"
+      title="Первый тур — за десять минут"
+      lead="Аккаунт, один тег на сайте и тур, собранный мышкой. Дальше правки идут без релизов."
+    >
+      <AuthForm
+        title="Регистрация"
+        submitLabel="Создать аккаунт"
+        // Требование к длине показываем заранее: узнать о нём из ошибки после
+        // отправки — худший способ.
+        hint="Не короче 15 символов. Требований к составу нет: длина надёжнее."
+        footer={<>Уже есть аккаунт? <Link to="/login">Войдите</Link></>}
+        onSubmit={async (email, password) => {
+          await register(email, password);
+          navigate("/projects", { replace: true });
+        }}
+      />
+    </AuthLayout>
   );
 }

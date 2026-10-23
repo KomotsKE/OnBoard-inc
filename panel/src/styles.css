@@ -4,6 +4,9 @@
 :root {
   color-scheme: light dark;
 
+  --scrim: rgb(0 0 0 / 62%);
+  --scrim-strong: rgb(0 0 0 / 78%);
+  --on-photo: #ffffff;
   --surface: #ffffff;
   --surface-muted: #f8fafc;
   --surface-sunken: #f1f5f9;
@@ -63,6 +66,9 @@
    и выдумывать его ради одной настройки не стоит. */
 @media (prefers-color-scheme: dark) {
   :root {
+    --scrim: rgb(0 0 0 / 62%);
+    --scrim-strong: rgb(0 0 0 / 78%);
+    --on-photo: #ffffff;
     --surface: #0b1220;
     --surface-muted: #111a2b;
     --surface-sunken: #0f172a;
@@ -183,10 +189,74 @@ p {
 }
 
 /* Экраны входа и регистрации */
-.auth {
-  max-width: 360px;
-  margin: calc(var(--panel-space) * 4) auto;
-  padding: 0 var(--panel-space);
+/* Снимок во весь экран под затемнением, форма карточкой справа. Без снимка
+   остаётся подложка --surface под тем же затемнением: белый текст на ней —
+   6,2 : 1 в светлой теме (#616161) и 20,2 : 1 в тёмной. */
+.auth-screen {
+  position: relative;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr minmax(320px, 440px);
+  gap: calc(var(--panel-space) * 4);
+  align-items: center;
+  padding: calc(var(--panel-space) * 4);
+  background: var(--surface);
+  color: var(--on-photo);
+  isolation: isolate;
+}
+
+.auth-screen__photo {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.auth-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(180deg, transparent, var(--scrim-strong)),
+    var(--scrim);
+}
+
+.auth-screen__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--panel-space);
+  font-weight: 700;
+}
+
+.auth-screen__title {
+  margin: calc(var(--panel-space) * 2) 0 var(--panel-space);
+  font-size: 40px;
+  line-height: 1.15;
+  color: var(--on-photo);
+}
+
+.auth-screen__lead {
+  max-width: 480px;
+  font-size: 18px;
+  color: var(--on-photo);
+}
+
+.auth-screen__card {
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-tooltip);
+  padding: calc(var(--panel-space) * 2);
+}
+
+@media (max-width: 860px) {
+  .auth-screen {
+    grid-template-columns: 1fr;
+    padding: calc(var(--panel-space) * 2);
+  }
 }
 
 .auth form {

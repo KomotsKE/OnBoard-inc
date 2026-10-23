@@ -1,5 +1,6 @@
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 
+import { AuthLayout } from "../components/AuthLayout";
 import { AuthForm } from "../components/AuthForm";
 import { useAuth } from "../components/AuthProvider";
 
@@ -15,15 +16,21 @@ export function LoginPage() {
   }
 
   return (
-    <AuthForm
-      title="Вход"
-      submitLabel="Войти"
-      footer={<>Нет аккаунта? <Link to="/register">Зарегистрируйтесь</Link></>}
-      onSubmit={async (email, password) => {
-        await login(email, password);
-        // Возвращаем туда, откуда увёл ProtectedRoute, иначе к проектам.
-        navigate(from ?? "/projects", { replace: true });
-      }}
-    />
+    <AuthLayout
+      photo="/auth-login.jpg"
+      title="Обучение внутри вашего продукта"
+      lead="Соберите тур мышкой прямо на своём сайте и опубликуйте его, не дожидаясь релиза."
+    >
+      <AuthForm
+        title="Вход"
+        submitLabel="Войти"
+        footer={<>Нет аккаунта? <Link to="/register">Зарегистрируйтесь</Link></>}
+        onSubmit={async (email, password) => {
+          await login(email, password);
+          // Возвращаем туда, откуда увёл ProtectedRoute, иначе к проектам.
+          navigate(from ?? "/projects", { replace: true });
+        }}
+      />
+    </AuthLayout>
   );
 }
