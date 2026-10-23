@@ -40,6 +40,7 @@ export function AnalyticsPage() {
             <button
               key={value}
               type="button"
+              className="btn"
               aria-pressed={range === value}
               data-testid={`range-${value}`}
               onClick={() => setRange(value)}

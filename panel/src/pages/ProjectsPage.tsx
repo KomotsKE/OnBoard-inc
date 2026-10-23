@@ -26,7 +26,9 @@ export function ProjectsPage() {
 
   return (
     <section>
-      <h1>Проекты</h1>
+      <div className="page__head">
+        <h1>Проекты</h1>
+      </div>
 
       <form
         className="projects__new"
@@ -48,7 +50,7 @@ export function ProjectsPage() {
             placeholder="Например: интернет-магазин"
             onChange={(event) => setName(event.target.value)}
           />
-          <button type="submit" disabled={create.isPending}>
+          <button type="submit" className="btn btn--primary" disabled={create.isPending}>
             {create.isPending ? "Создаём…" : "Создать"}
           </button>
         </div>
@@ -106,9 +108,9 @@ function ProjectCard({ project }: { project: Project }) {
         </div>
 
         <p className="projects__links">
-          <Link to={`/projects/${project.id}/tours`}>Туры</Link>
-          <Link to={`/projects/${project.id}/install`}>Установка</Link>
-          <button type="button" className="projects__delete" onClick={() => setConfirming(true)}>
+          <Link className="btn" to={`/projects/${project.id}/tours`}>Туры</Link>
+          <Link className="btn" to={`/projects/${project.id}/install`}>Установка</Link>
+          <button type="button" className="btn btn--danger" onClick={() => setConfirming(true)}>
             Удалить
           </button>
         </p>
@@ -141,10 +143,10 @@ function ProjectCard({ project }: { project: Project }) {
               value={typed}
               onChange={(event) => setTyped(event.target.value)}
             />
-            <button type="submit" disabled={typed !== project.name || remove.isPending}>
+            <button type="submit" className="btn btn--danger" disabled={typed !== project.name || remove.isPending}>
               Удалить навсегда
             </button>
-            <button type="button" onClick={() => setConfirming(false)}>
+            <button type="button" className="btn btn--quiet" onClick={() => setConfirming(false)}>
               Отмена
             </button>
           </div>

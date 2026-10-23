@@ -46,7 +46,7 @@ export function AppLayout() {
           <span data-testid="owner-email">{owner?.email}</span>
           <button
             type="button"
-            className="layout__logout"
+            className="btn btn--quiet"
             data-testid="logout"
             onClick={async () => {
               await logout();

@@ -62,6 +62,7 @@ export function TourBuilderPage() {
         </div>
         <button
           type="button"
+          className="btn btn--primary"
           disabled={publication.isPending || (!published && steps.length === 0)}
           onClick={() => publication.mutate({ id: tourId, published: !published })}
         >
@@ -218,11 +219,12 @@ function PickOnSite({
           maxLength={2000}
           onChange={(event) => setPageUrl(event.target.value)}
         />
-        <button type="submit" disabled={session.isPending || !pageUrl.trim()}>
+        <button type="submit" className="btn btn--primary" disabled={session.isPending || !pageUrl.trim()}>
           {session.isPending ? "Открываем…" : "Выбрать на сайте"}
         </button>
         <button
           type="button"
+          className="btn"
           data-testid="preview"
           disabled={session.isPending || !pageUrl.trim() || !hasSteps}
           onClick={() => open("preview")}
@@ -289,7 +291,7 @@ function AddStep({
           placeholder="Что здесь происходит"
           onChange={(event) => setBody(event.target.value)}
         />
-        <button type="submit" disabled={pending || !selector.trim() || !body.trim()}>
+        <button type="submit" className="btn btn--primary" disabled={pending || !selector.trim() || !body.trim()}>
           Добавить шаг
         </button>
       </div>
@@ -350,7 +352,7 @@ function Settings({
           maxLength={500}
           onChange={(event) => setDraft({ ...draft, value: event.target.value })}
         />
-        <button type="submit" disabled={update.isPending}>
+        <button type="submit" className="btn btn--primary" disabled={update.isPending}>
           Сохранить
         </button>
       </div>

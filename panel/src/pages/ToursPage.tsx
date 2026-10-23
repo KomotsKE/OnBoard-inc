@@ -27,7 +27,9 @@ export function ToursPage() {
 
   return (
     <section>
-      <h1>Туры</h1>
+      <div className="page__head">
+        <h1>Туры</h1>
+      </div>
 
       <form
         className="projects__new"
@@ -49,7 +51,7 @@ export function ToursPage() {
             placeholder="Например: знакомство с отчётами"
             onChange={(event) => setName(event.target.value)}
           />
-          <button type="submit" disabled={create.isPending}>
+          <button type="submit" className="btn btn--primary" disabled={create.isPending}>
             {create.isPending ? "Создаём…" : "Создать"}
           </button>
         </div>
@@ -141,10 +143,10 @@ function TourRow({ projectId, tour }: { projectId: string; tour: TourListItem })
         {confirming ? (
           <span className="table__confirm" data-testid="tour-confirm">
             Удалить тур вместе с шагами и аналитикой?{" "}
-            <button type="button" onClick={() => remove.mutate(tour.id)}>
+            <button type="button" className="btn btn--danger" onClick={() => remove.mutate(tour.id)}>
               Удалить
             </button>{" "}
-            <button type="button" onClick={() => setConfirming(false)}>
+            <button type="button" className="btn btn--quiet" onClick={() => setConfirming(false)}>
               Отмена
             </button>
           </span>
@@ -159,10 +161,11 @@ function TourRow({ projectId, tour }: { projectId: string; tour: TourListItem })
       </td>
       <td className="table__number">{completionLabel(tour)}</td>
       <td className="table__actions">
-        <Link to={`/projects/${projectId}/tours/${tour.id}`}>Конструктор</Link>
-        <Link to={`/projects/${projectId}/tours/${tour.id}/analytics`}>Аналитика</Link>
+        <Link className="btn" to={`/projects/${projectId}/tours/${tour.id}`}>Конструктор</Link>
+        <Link className="btn" to={`/projects/${projectId}/tours/${tour.id}/analytics`}>Аналитика</Link>
         <button
           type="button"
+          className="btn"
           disabled={publication.isPending || blocked}
           // Публикация тура без шагов отклоняется сервером (422), но кнопку
           // лучше выключить заранее и сказать почему, чем показать ошибку.
@@ -171,7 +174,7 @@ function TourRow({ projectId, tour }: { projectId: string; tour: TourListItem })
         >
           {published ? "Снять с публикации" : "Опубликовать"}
         </button>
-        <button type="button" className="projects__delete" onClick={() => setConfirming(true)}>
+        <button type="button" className="btn btn--danger" onClick={() => setConfirming(true)}>
           Удалить
         </button>
       </td>

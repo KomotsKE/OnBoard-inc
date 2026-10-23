@@ -114,7 +114,7 @@ export function AuthForm({ title, submitLabel, hint, footer, onSubmit }: Props) 
           </p>
         ) : null}
 
-        <button type="submit" disabled={busy}>
+        <button type="submit" className="btn btn--primary" disabled={busy}>
           {busy ? "Отправляем…" : submitLabel}
         </button>
       </form>

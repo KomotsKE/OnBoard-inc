@@ -78,6 +78,7 @@ function Snippet({ text, failed }: { text?: string; failed: boolean }) {
       <pre data-testid="snippet">{text}</pre>
       <button
         type="button"
+        className="btn"
         onClick={() => {
           // Буфер обмена доступен не везде (нет https, запрет политикой):
           // тогда сниппет остаётся на экране и его можно выделить руками.
@@ -156,7 +157,7 @@ function Origins({ projectId, origins }: { projectId: string; origins: string[] 
           placeholder="https://example.com"
           onChange={(event) => setDraft(event.target.value)}
         />
-        <button type="submit" disabled={update.isPending}>
+        <button type="submit" className="btn btn--primary" disabled={update.isPending}>
           Добавить
         </button>
       </form>

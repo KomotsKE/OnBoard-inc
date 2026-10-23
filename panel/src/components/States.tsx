@@ -32,7 +32,7 @@ export function NotFound() {
         Мы намеренно не различаем эти случаи: иначе по ответу можно было бы узнать, что
         чужой проект существует.
       </p>
-      <Link className="state__action" to="/projects">
+      <Link className="btn btn--primary" to="/projects">
         К проектам
       </Link>
     </section>
@@ -59,7 +59,7 @@ export function ErrorState({
       {/* role="alert": с клавиатуры и экранным диктором сообщение иначе
           остаётся незамеченным. */}
       <p role="alert">Не удалось загрузить {what}.</p>
-      <button type="button" onClick={onRetry}>
+      <button type="button" className="btn" onClick={onRetry}>
         Повторить
       </button>
     </section>

@@ -121,11 +121,11 @@ export function BrandingPage() {
           ))}
 
           <div className="projects__new-row step-form__actions">
-            <button type="submit" disabled={!changed || update.isPending}>
+            <button type="submit" className="btn btn--primary" disabled={!changed || update.isPending}>
               {update.isPending ? "Сохраняем…" : changed ? "Сохранить" : "Сохранено"}
             </button>
             {changed ? (
-              <button type="button" onClick={() => setDraft(null)}>
+              <button type="button" className="btn" onClick={() => setDraft(null)}>
                 Вернуть как было
               </button>
             ) : null}

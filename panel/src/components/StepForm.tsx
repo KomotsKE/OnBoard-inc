@@ -94,10 +94,10 @@ export function StepForm({
       </select>
 
       <div className="projects__new-row step-form__actions">
-        <button type="submit" disabled={!changed || saving || !draft.selector || !draft.body}>
+        <button type="submit" className="btn btn--primary" disabled={!changed || saving || !draft.selector || !draft.body}>
           {saving ? "Сохраняем…" : changed ? "Сохранить" : "Сохранено"}
         </button>
-        <button type="button" className="projects__delete" onClick={onDelete}>
+        <button type="button" className="btn btn--danger" onClick={onDelete}>
           Удалить шаг
         </button>
       </div>
