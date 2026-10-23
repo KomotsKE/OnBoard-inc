@@ -35,6 +35,49 @@ test("воронка показывает те же числа, что отда�
   await expect(page.getByTestId("funnel")).toContainText(`${data.funnel[0].runs} · 100 %`);
 });
 
+test("шаги воронки идут в порядке тура", async ({ owner: page }) => {
+  const response = page.waitForResponse((reply) => reply.url().includes("/analytics?range=7d"));
+  await openAnalytics(page, "Знакомство");
+  const data = await (await response).json();
+
+  const names = await page.getByTestId("funnel").locator(".funnel__name").allTextContents();
+  const expected = data.funnel.map(
+    (step: { step_position: number; title: string }) => `${step.step_position + 1}. ${step.title}`,
+  );
+  expect(names).toEqual([...expected, "Завершили"]);
+});
+
+test("при наличии проблем воронка и проблемы стоят на общей сетке", async ({ owner: page }) => {
+  await page.route("**/analytics?range=7d", async (route) => {
+    const reply = await route.fetch();
+    const data = await reply.json();
+    const issue = { type: "step_target_missing", step_position: 0, selector: "#x", error_code: null, count: 2 };
+    await route.fulfill({ response: reply, json: { ...data, issues: [issue] } });
+  });
+  await openAnalytics(page, "Знакомство");
+
+  const split = page.getByTestId("analytics-split");
+  await expect(split).toHaveCount(1);
+  await expect(split.getByTestId("funnel")).toBeVisible();
+  await expect(split.getByTestId("issues")).toBeVisible();
+  // Блок «Проблемы» не должен попасть внутрь воронки.
+  await expect(page.getByTestId("funnel").getByTestId("issues")).toHaveCount(0);
+});
+
+test("без проблем воронка занимает всю ширину, без двухколоночной сетки", async ({ owner: page }) => {
+  // Подменяем ответ: тот же тур, но список проблем пуст.
+  await page.route("**/analytics?range=7d", async (route) => {
+    const reply = await route.fetch();
+    const data = await reply.json();
+    await route.fulfill({ response: reply, json: { ...data, issues: [] } });
+  });
+  await openAnalytics(page, "Знакомство");
+
+  await expect(page.getByTestId("funnel")).toBeVisible();
+  await expect(page.getByTestId("issues")).toHaveCount(0);
+  await expect(page.getByTestId("analytics-split")).toHaveCount(0);
+});
+
 test("худший шаг подсвечен и подписан, а не только раскрашен", async ({ owner: page }) => {
   await openAnalytics(page, "Знакомство");
 

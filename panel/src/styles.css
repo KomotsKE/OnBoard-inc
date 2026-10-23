@@ -355,6 +355,13 @@ p {
   }
 }
 
+/* Общая коробка блока: воронка и «Проблемы». */
+.card {
+  padding: var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+
 /* Полоса состояния: словом, точка — только украшение. */
 .banner {
   display: flex;
@@ -894,14 +901,14 @@ p {
    в одиночку — рядом всегда знак и подпись. */
 .funnel__range {
   display: flex;
-  gap: 8px;
-  margin: var(--panel-space) 0;
+  gap: var(--space-2);
+  margin: 0;
 }
 
 .funnel__range button {
-  padding: 6px 14px;
+  padding: var(--space-2) var(--space-4);
   border: 1px solid var(--panel-border);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: transparent;
   font: inherit;
   color: var(--ink-muted);
@@ -917,26 +924,26 @@ p {
 .totals {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: var(--panel-space);
-  margin-bottom: calc(var(--panel-space) * 1.5);
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
 }
 
 .totals__tile {
-  padding: var(--panel-space);
+  padding: var(--space-4);
   border: 1px solid var(--panel-border);
   border-radius: var(--onboard-radius);
 }
 
 .totals__label {
-  margin: 0 0 4px !important;
+  margin: 0 0 var(--space-1);
   font-size: 13px;
 }
 
 .totals__value {
-  margin: 0 !important;
+  margin: 0;
   font-size: 26px;
   font-weight: 600;
-  color: var(--ink) !important;
+  color: var(--ink);
 }
 
 .totals__share {
@@ -951,14 +958,14 @@ p {
   padding: 0;
   display: grid;
   /* Две строки столбцов не слипаются: разделитель — фон, а не линия. */
-  gap: 6px;
+  gap: var(--space-2);
 }
 
 .funnel__row {
   display: grid;
   grid-template-columns: minmax(140px, 220px) 1fr auto;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .funnel__name {
@@ -971,14 +978,14 @@ p {
 .funnel__bar {
   height: 18px;
   background: var(--surface-sunken);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 .funnel__fill {
   display: block;
   height: 100%;
   min-width: 2px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--accent);
 }
 
@@ -1013,7 +1020,7 @@ p {
 
 .funnel__issues ul {
   margin: 0;
-  padding-left: 18px;
+  padding-left: var(--space-5);
 }
 
 .funnel__issues li {

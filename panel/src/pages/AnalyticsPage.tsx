@@ -30,23 +30,24 @@ export function AnalyticsPage() {
 
   return (
     <section className="funnel">
-      <p>
-        <Link to={`/projects/${projectId}/tours/${tourId}`}>← К конструктору</Link>
-      </p>
-      <h1>{tour.data?.name ?? "Воронка"}</h1>
-
-      <div className="funnel__range" role="group" aria-label="Период">
-        {(["7d", "30d"] as const).map((value) => (
-          <button
-            key={value}
-            type="button"
-            aria-pressed={range === value}
-            data-testid={`range-${value}`}
-            onClick={() => setRange(value)}
-          >
-            {value === "7d" ? "7 дней" : "30 дней"}
-          </button>
-        ))}
+      <div className="page__head">
+        <p>
+          <Link to={`/projects/${projectId}/tours/${tourId}`}>← К конструктору</Link>
+        </p>
+        <h1>{tour.data?.name ?? "Воронка"}</h1>
+        <div className="funnel__range" role="group" aria-label="Период">
+          {(["7d", "30d"] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={range === value}
+              data-testid={`range-${value}`}
+              onClick={() => setRange(value)}
+            >
+              {value === "7d" ? "7 дней" : "30 дней"}
+            </button>
+          ))}
+        </div>
       </div>
 
       {analytics.data.totals.runs === 0 ? (
@@ -54,8 +55,7 @@ export function AnalyticsPage() {
       ) : (
         <>
           <Totals data={analytics.data} />
-          <Funnel data={analytics.data} />
-          <Issues issues={analytics.data.issues} />
+          <FunnelWithIssues data={analytics.data} />
         </>
       )}
     </section>
@@ -101,9 +101,21 @@ function Totals({ data }: { data: TourAnalytics }) {
   );
 }
 
+function FunnelWithIssues({ data }: { data: TourAnalytics }) {
+  if (data.issues.length === 0) {
+    return <Funnel data={data} />;
+  }
+  return (
+    <div className="split" data-testid="analytics-split">
+      <Funnel data={data} />
+      <Issues issues={data.issues} />
+    </div>
+  );
+}
+
 function Funnel({ data }: { data: TourAnalytics }) {
   return (
-    <div className="funnel__chart">
+    <div className="funnel__chart card">
       <h2>Воронка по шагам</h2>
       <ol className="funnel__steps" data-testid="funnel">
         {data.funnel.map((step) => (
@@ -157,11 +169,8 @@ function FunnelRow({ step, problem }: { step: FunnelStep; problem: boolean }) {
 }
 
 function Issues({ issues }: { issues: Issue[] }) {
-  if (issues.length === 0) {
-    return null;
-  }
   return (
-    <div className="funnel__issues">
+    <div className="funnel__issues card">
       <h2>Проблемы</h2>
       <ul data-testid="issues">
         {issues.map((issue, index) => (
