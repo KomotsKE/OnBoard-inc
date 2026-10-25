@@ -6,6 +6,12 @@
 
   --scrim: rgb(0 0 0 / 62%);
   --scrim-strong: rgb(0 0 0 / 78%);
+  --nav-surface: #0f172a;
+  --nav-surface-raised: #1e293b;
+  --nav-border: #334155;
+  --nav-ink: #e2e8f0; /* на --nav-surface — 14,48 : 1 */
+  --nav-ink-muted: #94a3b8; /* на --nav-surface — 6,96 : 1 */
+  --nav-ok: #bbf7d0;
   --on-photo: #ffffff;
   --surface: #ffffff;
   --surface-muted: #f8fafc;
@@ -68,6 +74,12 @@
   :root {
     --scrim: rgb(0 0 0 / 62%);
     --scrim-strong: rgb(0 0 0 / 78%);
+    --nav-surface: #0f172a;
+    --nav-surface-raised: #1e293b;
+    --nav-border: #334155;
+    --nav-ink: #e2e8f0; /* на --nav-surface — 14,48 : 1 */
+    --nav-ink-muted: #94a3b8; /* на --nav-surface — 6,96 : 1 */
+    --nav-ok: #bbf7d0;
     --on-photo: #ffffff;
     --surface: #0b1220;
     --surface-muted: #111a2b;
@@ -114,8 +126,36 @@ body {
   flex-direction: column;
   gap: var(--space-5);
   padding: var(--space-4);
-  background: var(--surface-sunken);
+  color-scheme: dark;
+  --surface: var(--nav-surface);
+  --surface-muted: var(--nav-surface-raised);
+  --ink: var(--nav-ink);
+  --ink-muted: var(--nav-ink-muted);
+  --border: var(--nav-border);
+  --border-strong: var(--nav-ink-muted);
+  --panel-border: var(--nav-border);
+  background: var(--nav-surface);
   border-right: 1px solid var(--border);
+}
+
+.console__aside .btn--quiet {
+  border-color: var(--nav-ink-muted);
+}
+
+.console__widget {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+/* Точка берётся от баннера установки: геометрия та же, отличается только цвет. */
+.console__widget .banner__dot {
+  background: var(--nav-ink-muted);
+}
+
+.console__widget--live .banner__dot {
+  background: var(--nav-ok);
 }
 
 .console__brand {
@@ -634,7 +674,7 @@ p {
 .projects__row {
   display: flex;
   gap: var(--space-5);
-  align-items: flex-start;
+  align-items: center;
   flex-wrap: wrap;
 }
 

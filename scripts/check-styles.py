@@ -25,6 +25,8 @@ TOKENS = (
     "--border --border-strong --accent --accent-ink --success --success-soft "
     "--warning --danger --danger-soft "
     "--scrim --scrim-strong --on-photo "
+    "--nav-surface --nav-surface-raised --nav-border "
+    "--nav-ink --nav-ink-muted --nav-ok "
     "--space-1 --space-2 --space-3 --space-4 --space-5 --space-6 "
     "--radius-sm --radius-md --radius-lg --radius-pill "
     "--shadow-card --shadow-tooltip --font-sans --font-mono"

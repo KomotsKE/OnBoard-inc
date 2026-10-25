@@ -105,3 +105,26 @@ test("чужой проект даёт «не найдено», а не общу
   await page.getByRole("link", { name: "К проектам" }).click();
   await expect(page).toHaveURL(/\/projects$/);
 });
+
+test("ряд действий карточки выровнен по центру блока с названием", async ({ owner: page }) => {
+  const suffix = Date.now().toString().slice(-6);
+  const fresh = `Геометрия ${suffix}`;
+
+  // Ширина фиксирована: на узком экране flex-wrap переносит ряд действий и
+  // геометрия другая.
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/projects");
+  await createProject(page, fresh);
+
+  // У карточки без виджета под рядом стоит подсказка, поэтому с центром всей
+  // карточки сравнивать нельзя — только с блоком названия.
+  const card = page.locator('[data-testid="project-card"]').filter({ hasText: fresh });
+  await expect(card.locator(".projects__hint")).toBeVisible();
+
+  const about = await card.locator(".projects__about").boundingBox();
+  const links = await card.locator(".projects__links").boundingBox();
+  const center = (box: { y: number; height: number } | null) => box!.y + box!.height / 2;
+  expect(Math.abs(center(links) - center(about))).toBeLessThanOrEqual(2);
+
+  await removeProject(page, fresh);
+});

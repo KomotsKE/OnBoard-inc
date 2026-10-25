@@ -1,8 +1,33 @@
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import { Link, Outlet, useNavigate, useParams } from "react-router-dom";
 
+import { useProjects } from "../hooks/useProjects";
 import { useAuth } from "./AuthProvider";
 import { ProjectNav } from "./ProjectNav";
 import { ProjectSwitcher } from "./ProjectSwitcher";
+
+function AsideWidgetState() {
+  const { projectId } = useParams();
+  const { data: projects } = useProjects();
+  const project = projects?.find((item) => item.id === projectId);
+
+  if (!project) {
+    return null;
+  }
+
+  return (
+    <p
+      className={
+        project.widget_connected
+          ? "console__widget console__widget--live"
+          : "console__widget"
+      }
+      data-testid="aside-widget-state"
+    >
+      <span className="banner__dot" aria-hidden="true" />
+      {project.widget_connected ? "Виджет подключён" : "Виджет ещё не найден"}
+    </p>
+  );
+}
 
 /**
  * Рамка приватных экранов: слева — проект и его разделы, справа — экран.
@@ -41,6 +66,7 @@ export function AppLayout() {
 
         <ProjectSwitcher />
         <ProjectNav />
+        <AsideWidgetState />
 
         <div className="console__owner">
           <span data-testid="owner-email">{owner?.email}</span>

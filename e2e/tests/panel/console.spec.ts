@@ -73,3 +73,24 @@ test("на списке проектов разделов проекта нет"
   await expect(owner.locator(NAV)).toHaveCount(0);
   await expect(owner.getByTestId("owner-email")).toBeVisible();
 });
+
+test("в боковой колонке видно состояние виджета проекта", async ({ owner }) => {
+  const api = await asOwner();
+  const id = await projectId(api);
+
+  await owner.setViewportSize({ width: 1280, height: 800 });
+  await owner.goto(`/projects/${id}/tours`);
+
+  // У демо-проекта стенда виджет запрашивал конфиг. Состояние названо словом,
+  // а не только цветом точки.
+  const state = owner.locator(".console__aside").getByTestId("aside-widget-state");
+  await expect(state).toHaveText("Виджет подключён");
+});
+
+test("на списке проектов блока состояния виджета в колонке нет", async ({ owner }) => {
+  await owner.setViewportSize({ width: 1280, height: 800 });
+  await owner.goto("/projects");
+
+  await expect(owner.getByTestId("owner-email")).toBeVisible();
+  await expect(owner.getByTestId("aside-widget-state")).toHaveCount(0);
+});
