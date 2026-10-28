@@ -31,11 +31,20 @@ def _origin(page_url: str) -> str:
 def _with_token(page_url: str, token: str) -> str:
     """Токен добавляется к адресу, остальное сохраняется.
 
+    Прежний `onboard_edit` из скопированного адреса убирается: загрузчик читает
+    первый параметр и взял бы протухший токен. Query режется по `&` без
+    перекодирования, чтобы остальные параметры остались байт в байт.
+
     Query страницы может быть частью её состояния, а `#/маршрут` у сайтов на
     hash-роутинге — вообще адресом нужной страницы.
     """
     parts = urlsplit(page_url)
-    query = f"{parts.query}&{PARAM}={token}" if parts.query else f"{PARAM}={token}"
+    kept = [
+        segment
+        for segment in parts.query.split("&")
+        if segment and segment.split("=", 1)[0] != PARAM
+    ]
+    query = "&".join([*kept, f"{PARAM}={token}"])
     return urlunsplit((parts.scheme, parts.netloc, parts.path, query, parts.fragment))
 
 

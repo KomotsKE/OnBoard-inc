@@ -6,6 +6,7 @@ HTTP-отказы по токену (просроченный → 401) появ�
 """
 
 from datetime import UTC, datetime, timedelta
+from urllib.parse import parse_qs, urlsplit
 
 import jwt
 import pytest
@@ -87,6 +88,33 @@ class TestIssue:
 
         assert body["url"].startswith(f"{SITE}/app?tab=5&onboard_edit=")
         assert body["url"].endswith("#/отчёты")
+
+    @pytest.mark.parametrize("stale", ["onboard_edit=OLD", "onboard_edit"])
+    async def test_replaces_stale_token_from_copied_address(self, client, stale):
+        # Владелец копирует адрес из строки браузера во время сессии редактора:
+        # загрузчик читает первый onboard_edit, и протухший токен победил бы новый.
+        auth = await account(client, "owner@example.test")
+        tour_id = await tour_on_site(client, auth)
+
+        _, body = await issue(client, auth, tour_id, page_url=f"{SITE}/app?{stale}")
+
+        query = parse_qs(urlsplit(body["url"]).query, keep_blank_values=True)
+        assert len(query["onboard_edit"]) == 1
+        scope = read_editor_token(get_settings(), query["onboard_edit"][0])
+        assert scope is not None and scope.tour_id == tour_id
+
+    async def test_stale_token_removal_leaves_rest_of_query_byte_for_byte(self, client):
+        # Пересборка через parse_qsl + urlencode переписала бы «+», «%20», ключ
+        # без «=» и закодированные символы; query — часть состояния страницы.
+        auth = await account(client, "owner@example.test")
+        tour_id = await tour_on_site(client, auth)
+        page_url = f"{SITE}/app?q=a+b%20c&onboard_edit=OLD&flag&x=%D0%B0%2F#/отчёты"
+
+        _, body = await issue(client, auth, tour_id, page_url=page_url)
+
+        assert body["url"].startswith(f"{SITE}/app?q=a+b%20c&flag&x=%D0%B0%2F&onboard_edit=")
+        assert body["url"].endswith("#/отчёты")
+        assert "onboard_edit=OLD" not in body["url"]
 
 
 class TestRefusals:
