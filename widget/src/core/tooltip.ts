@@ -190,11 +190,11 @@ export function createTooltip(
 
   const footer = doc.createElement("div");
   footer.className = "tip__footer";
-  footer.append(dots, skip, back, next);
+  footer.append(skip, back, next);
 
   // Текст для скринридера стоит вне точек: `drawDots` очищает свой контейнер
   // целиком, и внутри он затирался бы на каждом шаге.
-  tip.append(arrow, title, body, progress, footer);
+  tip.append(arrow, dots, title, body, progress, footer);
   root.append(tip);
 
   let target: Element | null = null;

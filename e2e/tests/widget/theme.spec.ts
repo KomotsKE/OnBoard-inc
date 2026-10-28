@@ -86,3 +86,33 @@ test("на последнем шаге подпись берётся из тем
     await api.dispose();
   }
 });
+
+test("длинные подписи темы не выводят кнопки за карточку", async ({ page }) => {
+  // 40 символов — предел схемы; «Ш» самая широкая, подпись заведомо шире карточки.
+  const long = "Ш".repeat(40);
+
+  // Подписи подменяются в ответе конфига, а не в теме общего проекта стенда:
+  // соседние файлы идут параллельно, и их подвал стал бы двухстрочным.
+  await page.route("**/v1/public/config*", async (route) => {
+    const response = await route.fetch();
+    const config = await response.json();
+    config.project.theme = { ...config.project.theme, next_label: long, skip_label: long };
+    await route.fulfill({ response, json: config });
+  });
+  await page.goto("/reports");
+  await expect(page.locator('[data-part="next"]')).toHaveText(long);
+
+  const tip = (await page.locator('[data-part="tip"]').boundingBox())!;
+  for (const part of ["next", "skip"]) {
+    const box = (await page.locator(`[data-part="${part}"]`).boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(tip.x);
+    expect(box.x + box.width).toBeLessThanOrEqual(tip.x + tip.width);
+  }
+
+  // Лишнее обрезано многоточием: текст в узле остался прежним, поэтому
+  // обрезку видно только по ширине содержимого (toHaveText её не заметит).
+  const clipped = await page
+    .locator('[data-part="next"]')
+    .evaluate((node) => node.scrollWidth > node.clientWidth);
+  expect(clipped).toBe(true);
+});

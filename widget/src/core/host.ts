@@ -76,17 +76,24 @@ const STYLES = `
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+/* В карточке 320 px три кнопки занимают 280, расти могли только точки прогресса —
+   поэтому они вынесены наверх, а подвал переносит кнопки целыми словами. */
 .tip__footer {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   align-items: center;
   gap: 10px;
   margin-top: 14px;
 }
-.tip__dots { display: flex; align-items: center; gap: 5px; margin-right: auto; }
+.tip__dots { display: flex; align-items: center; gap: 5px; margin: 0 0 10px; }
 .tip__dot { width: 6px; height: 6px; border-radius: 50%; background: #78839A; }
 .tip__dot[data-current] { background: var(--onboard-primary, #2563EB); }
 .tip__button {
   box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   padding: 8px 14px;
   border: 0;
   border-radius: var(--onboard-radius, 8px);

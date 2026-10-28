@@ -13,6 +13,10 @@ const TIP = '[data-part="tip"]';
 const NEXT = '[data-part="next"]';
 const BACK = '[data-part="back"]';
 const SKIP = '[data-part="skip"]';
+// На узле подвала нет data-part, поэтому он ищется по классу.
+const FOOTER = ".tip__footer";
+// Одна строка кнопок ≈ 36 px; две — от 72.
+const ONE_ROW_MAX = 50;
 
 async function started(page: Page, path = "/reports"): Promise<void> {
   await page.goto(path);
@@ -54,7 +58,20 @@ test("полный проход по четырём шагам", async ({ page }
   await expect(page.locator(HOST)).toHaveCount(0);
 });
 
-test("подсказка не выходит за экран ни на одном шаге", async ({ page }) => {
+test("на каждом шаге подсказка в экране, «Далее» в карточке, подвал в одну строку", async ({ page }) => {
+  // Подписи по умолчанию закреплены в ответе конфига: тему общего проекта
+  // параллельно правит theme.spec.ts, и с «Не сейчас» подвал честно переносится.
+  await page.route("**/v1/public/config*", async (route) => {
+    const response = await route.fetch();
+    const config = await response.json();
+    config.project.theme = {
+      ...config.project.theme,
+      next_label: "Далее",
+      skip_label: "Пропустить",
+      done_label: "Готово",
+    };
+    await route.fulfill({ response, json: config });
+  });
   await started(page);
   const viewport = page.viewportSize()!;
 
@@ -67,6 +84,13 @@ test("подсказка не выходит за экран ни на одно�
     expect(tip!.y).toBeGreaterThanOrEqual(0);
     expect(tip!.x + tip!.width).toBeLessThanOrEqual(viewport.width);
     expect(tip!.y + tip!.height).toBeLessThanOrEqual(viewport.height);
+
+    // «Далее» не торчит из белого фона карточки, подвал — одна строка кнопок (T2.9).
+    const next = await page.locator(NEXT).boundingBox();
+    expect(next).not.toBeNull();
+    expect(next!.x + next!.width).toBeLessThanOrEqual(tip!.x + tip!.width);
+    const footer = await page.locator(FOOTER).boundingBox();
+    expect(footer!.height).toBeLessThan(ONE_ROW_MAX);
     if (step === null) {
       break;
     }

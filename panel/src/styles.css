@@ -963,6 +963,8 @@ p {
 
 .preview__footer {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   align-items: center;
   gap: 10px;
   margin-top: 14px;
@@ -972,7 +974,7 @@ p {
 .preview__dots {
   display: flex;
   gap: 5px;
-  margin-right: auto;
+  margin: 0 0 10px;
 }
 
 .preview__dot {
@@ -987,10 +989,16 @@ p {
 }
 
 .preview__ghost {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--onboard-text-muted);
 }
 
 .preview__primary {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   padding: 8px 14px;
   border-radius: var(--onboard-radius);
   background: var(--onboard-primary);

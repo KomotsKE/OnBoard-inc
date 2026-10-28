@@ -31,18 +31,18 @@ export function TooltipPreview({
     <div className="preview" data-testid="preview">
       <p className="preview__caption">Так шаг увидит посетитель</p>
       <div className="preview__tip" style={themeVariables(theme)}>
+        <span className="preview__dots">
+          {Array.from({ length: total }, (_, position) => (
+            <span
+              key={position}
+              className="preview__dot"
+              data-current={position === index ? "" : undefined}
+            />
+          ))}
+        </span>
         {step.title ? <p className="preview__title">{step.title}</p> : null}
         <p className="preview__body">{step.body}</p>
         <div className="preview__footer">
-          <span className="preview__dots">
-            {Array.from({ length: total }, (_, position) => (
-              <span
-                key={position}
-                className="preview__dot"
-                data-current={position === index ? "" : undefined}
-              />
-            ))}
-          </span>
           <span className="preview__ghost">{String(theme.skip_label ?? "Пропустить")}</span>
           <span className="preview__primary">
             {last ? String(theme.done_label ?? "Готово") : String(theme.next_label ?? "Далее")}
