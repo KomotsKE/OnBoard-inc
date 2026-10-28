@@ -38,6 +38,10 @@ describe("токен режима редактора в адресе", () => {
     // Целый адрес: токен ищется и в записи навигации, когда SPA уже переписало location.
     ["http://сайт/отчёты?onboard_edit=abc", "abc"],
     ["http://сайт/отчёты", null],
+    // Hash-роутинг: сервер ставит токен перед фрагментом, фрагмент в токен не входит.
+    ["http://сайт/x?onboard_edit=abc#/отчёты", "abc"],
+    // Query внутри фрагмента на сервер не уходит и токеном не считается.
+    ["http://сайт/x#/y?onboard_edit=abc", null],
   ])("%s → %s", (search, expected) => {
     expect(editorToken(search)).toBe(expected);
   });

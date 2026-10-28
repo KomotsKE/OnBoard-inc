@@ -129,7 +129,11 @@ export async function fetchConfig(
  * (см. `initialUrl`), и разбирать их по-разному — лишний повод ошибиться.
  */
 export function editorToken(source: string): string | null {
-  const query = source.includes("?") ? source.slice(source.indexOf("?")) : source;
+  // Фрагмент отрезаем первым: сервер ставит токен перед ним, и на сайтах
+  // с hash-роутингом он иначе приклеился бы к токену.
+  const hashAt = source.indexOf("#");
+  const withoutHash = hashAt === -1 ? source : source.slice(0, hashAt);
+  const query = withoutHash.includes("?") ? withoutHash.slice(withoutHash.indexOf("?")) : withoutHash;
   const token = new URLSearchParams(query).get(EDITOR_PARAM);
   return token !== null && token.trim() !== "" ? token : null;
 }
@@ -204,8 +208,9 @@ export function loadCore(document: Document, src: string): void {
  * History API не сообщает о `pushState` и `replaceState` событиями, поэтому
  * обёртка — единственный способ о них узнать. Это записанное исключение из
  * инварианта №3 «встроенные объекты не патчим»: оригинал вызывается всегда,
- * его результат возвращается как есть, а при остановке метод возвращается
- * на место.
+ * его результат возвращается как есть. При остановке метод возвращается
+ * на место, только если он всё ещё наш; если поверх встала чужая обёртка,
+ * мы её не срываем, а наша остаётся в цепочке и после остановки молчит.
  *
  * Вызовы схлопываются: SPA часто делает `pushState`, а следом сразу
  * `replaceState` — реагировать стоит один раз, на итоговый адрес.
@@ -213,18 +218,23 @@ export function loadCore(document: Document, src: string): void {
 export function watchUrl(target: Window, onChange: () => void): () => void {
   const history = target.history;
   const originals: Partial<Record<HistoryMethod, History["pushState"]>> = {};
+  const wrappers: Partial<Record<HistoryMethod, History["pushState"]>> = {};
   let scheduled = false;
+  let stopped = false;
 
   // Эта функция вызывается изнутри `pushState` сайта: исключение здесь
   // оборвало бы его навигацию.
   const schedule = guard("unexpected", () => {
-    if (scheduled) {
+    if (stopped || scheduled) {
       return;
     }
     scheduled = true;
     target.setTimeout(
       guard("unexpected", () => {
         scheduled = false;
+        if (stopped) {
+          return;
+        }
         onChange();
       }),
       0,
@@ -234,21 +244,24 @@ export function watchUrl(target: Window, onChange: () => void): () => void {
   for (const name of ["pushState", "replaceState"] as HistoryMethod[]) {
     const original = history[name];
     originals[name] = original;
-    history[name] = function (this: History, ...args: Parameters<History["pushState"]>) {
+    const wrapper = function (this: History, ...args: Parameters<History["pushState"]>) {
       // Сначала отдаём работу сайту и возвращаем его результат, потом свои дела.
       const result = original.apply(this, args);
       schedule();
       return result;
     };
+    wrappers[name] = wrapper;
+    history[name] = wrapper;
   }
 
   target.addEventListener("popstate", schedule);
 
   return () => {
+    stopped = true;
     for (const name of ["pushState", "replaceState"] as HistoryMethod[]) {
       const original = originals[name];
-      // Если поверх нас встал кто-то ещё, чужую обёртку не срываем.
-      if (original && history[name] !== original) {
+      // Возвращаем оригинал, только если наверху всё ещё наша обёртка.
+      if (original && history[name] === wrappers[name]) {
         history[name] = original;
       }
     }

@@ -309,6 +309,48 @@ describe("навигация в SPA", () => {
     expect(target.history.pushState).toBe(original);
   });
 
+  it("не срывает чужую обёртку истории, поставленную поверх нашей", () => {
+    const target = spaWindow();
+    const unwatch = watchUrl(target, vi.fn());
+    const ours = target.history.pushState;
+    // Как настоящий роутер: зовёт то, что стояло до него, и отдаёт его результат.
+    const foreign = (...args: unknown[]): string => String(Reflect.apply(ours, target.history, args));
+    target.history.pushState = foreign;
+
+    unwatch();
+
+    expect(target.history.pushState).toBe(foreign);
+  });
+
+  it("после остановки не зовёт onChange, даже если чужая обёртка держит нашу в цепочке", async () => {
+    const target = spaWindow();
+    const onChange = vi.fn();
+    const unwatch = watchUrl(target, onChange);
+    const ours = target.history.pushState;
+    // Как настоящий роутер: зовёт то, что стояло до него, и отдаёт его результат.
+    const foreign = (...args: unknown[]): string => String(Reflect.apply(ours, target.history, args));
+    target.history.pushState = foreign;
+
+    unwatch();
+    // Чужая обёртка держит нашу в замыкании и после остановки: зовём её напрямую.
+    foreign({}, "", "/dashboard");
+    await settled();
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("не зовёт onChange для уже запланированной проверки, если остановились до её срабатывания", async () => {
+    const target = spaWindow();
+    const onChange = vi.fn();
+    const unwatch = watchUrl(target, onChange);
+
+    target.history.pushState({}, "", "/dashboard");
+    unwatch();
+    await settled();
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it("схлопывает pushState и следующий за ним replaceState в один вызов", async () => {
     const target = spaWindow();
     const onChange = vi.fn();
