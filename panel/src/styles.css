@@ -629,7 +629,20 @@ p {
   gap: var(--space-2);
   align-items: center;
   justify-content: flex-end;
-  flex-wrap: wrap;
+}
+
+/* Меню «Ещё» живёт в <body> (портал), координаты задаёт компонент. */
+.row-menu {
+  position: fixed;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-tooltip);
 }
 
 /* Конструктор: шаги, редактор шага и его вид — рядом, а не друг под другом.

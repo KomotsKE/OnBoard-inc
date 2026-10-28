@@ -2,6 +2,7 @@ import { type Locator } from "@playwright/test";
 
 import { asOwner, standProject } from "../../demo-api";
 import { expect, test } from "./owner-session";
+import { MENU_TESTID, chooseInMenu, openRowMenu } from "./tour-menu";
 
 /**
  * Единый вид действий (T8.8).
@@ -69,13 +70,20 @@ test("действия строки таблицы туров одного ви�
   await expect(row).toBeVisible();
 
   expectUniformButtons(await measure(row.locator(".table__actions")));
+
+  // Пункты меню «Ещё» живут в портале, а не в строке, и единый вид (T8.8)
+  // должны иметь так же. Проверка здесь, а не рядом с `tour-menu.ts`: `measure`
+  // и `expectUniformButtons` локальны для этого файла, а лишний заход в
+  // приложение упирается в лимит обновлений токена.
+  await openRowMenu(owner, row);
+  expectUniformButtons(await measure(owner.getByTestId(MENU_TESTID)));
 });
 
 test("кнопки подтверждения удаления тура того же вида", async ({ owner }) => {
   const { id } = await standProject(await asOwner());
   await owner.goto(`/projects/${id}/tours`);
   const row = owner.locator('[data-testid="tour-row"]').first();
-  await row.locator(".table__actions").getByRole("button", { name: "Удалить" }).click();
+  await chooseInMenu(owner, row, "button", "Удалить");
   const confirm = row.locator('[data-testid="tour-confirm"]');
   await expect(confirm).toBeVisible();
 

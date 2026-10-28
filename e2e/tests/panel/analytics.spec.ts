@@ -1,6 +1,7 @@
 import { type Page } from "@playwright/test";
 
 import { expect, test } from "./owner-session";
+import { chooseInMenu } from "./tour-menu";
 
 /**
  * Экран воронки (T4.4).
@@ -14,11 +15,8 @@ async function openAnalytics(page: Page, tour: string): Promise<void> {
   await page.goto("/projects");
   const card = page.locator('[data-testid="project-card"]').filter({ hasText: "Отчётница" });
   await card.getByRole("link", { name: "Туры", exact: true }).click();
-  await page
-    .locator('[data-testid="tour-row"]')
-    .filter({ hasText: tour })
-    .getByRole("link", { name: "Аналитика" })
-    .click();
+  const row = page.locator('[data-testid="tour-row"]').filter({ hasText: tour });
+  await chooseInMenu(page, row, "link", "Аналитика");
 }
 
 test("воронка показывает те же числа, что отдаёт API", async ({ owner: page }) => {

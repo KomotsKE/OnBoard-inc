@@ -2,6 +2,7 @@ import { type Page } from "@playwright/test";
 
 import { API_URL, STAND_URL } from "../../urls";
 import { expect, test } from "./owner-session";
+import { chooseInMenu } from "./tour-menu";
 
 /**
  * Конструктор тура (T3.5).
@@ -67,7 +68,7 @@ test("тур из трёх шагов: сборка, порядок перета
   await page.getByLabel("Название нового тура").fill(name);
   await page.getByRole("button", { name: "Создать" }).click();
   const row = page.locator('[data-testid="tour-row"]').filter({ hasText: name });
-  await row.getByRole("link", { name: "Конструктор" }).click();
+  await row.getByRole("link", { name: "Открыть", exact: true }).click();
   await expect(page.getByRole("heading", { name })).toBeVisible();
 
   // Условие показа — отдельный адрес, чтобы не пересекаться с другими турами.
@@ -109,7 +110,7 @@ test("тур из трёх шагов: сборка, порядок перета
   // Прибираем за собой.
   await page.goto(`/projects`);
   await card.getByRole("link", { name: "Туры", exact: true }).click();
-  await row.getByRole("button", { name: "Удалить" }).click();
+  await chooseInMenu(page, row, "button", "Удалить");
   await row.getByTestId("tour-confirm").getByRole("button", { name: "Удалить" }).click();
   await expect(row).toHaveCount(0);
 });

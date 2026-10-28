@@ -1,6 +1,7 @@
 import { type Page } from "@playwright/test";
 
 import { expect, test } from "./owner-session";
+import { chooseInMenu, openRowMenu } from "./tour-menu";
 
 /**
  * Список туров (T3.4).
@@ -51,13 +52,13 @@ test("публикация делает тур видимым виджету, с
   await expect(row).toContainText(/черновик/i);
   expect(await tourForPage(page, "/panel-check")).toBe("нет тура");
 
-  await row.getByRole("button", { name: "Опубликовать" }).click();
+  await chooseInMenu(page, row, "button", "Опубликовать");
   await expect(row).toContainText(/опубликован/i);
 
   expect(await tourForPage(page, "/panel-check")).toBe(DRAFT);
 
   // Возвращаем как было: демо-данные общие для всех сценариев.
-  await row.getByRole("button", { name: "Снять с публикации" }).click();
+  await chooseInMenu(page, row, "button", "Снять с публикации");
   await expect(row).toContainText(/черновик/i);
   expect(await tourForPage(page, "/panel-check")).toBe("нет тура");
 });
@@ -97,11 +98,13 @@ test("тур без шагов опубликовать нельзя, и вид�
   const row = page.locator('[data-testid="tour-row"]').filter({ hasText: name });
   // Столбец «Шагов» — число: подпись стоит в заголовке таблицы.
   await expect(row.locator("td.table__number").first()).toHaveText("0");
-  await expect(row.getByRole("button", { name: "Опубликовать" })).toBeDisabled();
+  const menu = await openRowMenu(page, row);
+  await expect(menu.getByRole("button", { name: "Опубликовать" })).toBeDisabled();
+  await page.keyboard.press("Escape");
   await expect(row.getByTestId("tour-no-steps")).toBeVisible();
 
   // Прибираем за собой.
-  await row.getByRole("button", { name: "Удалить" }).click();
+  await chooseInMenu(page, row, "button", "Удалить");
   await row.getByTestId("tour-confirm").getByRole("button", { name: "Удалить" }).click();
   await expect(row).toHaveCount(0);
 });

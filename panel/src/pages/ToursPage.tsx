@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 
 import type { TourListItem, UrlMatch } from "../api/tours";
 import { useCreateTour, useDeleteTour, useTourPublication, useTours } from "../hooks/useTours";
+import { RowMenu } from "../components/RowMenu";
 import { Empty, ErrorState, Loading } from "../components/States";
 
 /**
@@ -161,22 +162,24 @@ function TourRow({ projectId, tour }: { projectId: string; tour: TourListItem })
       </td>
       <td className="table__number">{completionLabel(tour)}</td>
       <td className="table__actions">
-        <Link className="btn" to={`/projects/${projectId}/tours/${tour.id}`}>Конструктор</Link>
-        <Link className="btn" to={`/projects/${projectId}/tours/${tour.id}/analytics`}>Аналитика</Link>
-        <button
-          type="button"
-          className="btn"
-          disabled={publication.isPending || blocked}
-          // Публикация тура без шагов отклоняется сервером (422), но кнопку
-          // лучше выключить заранее и сказать почему, чем показать ошибку.
-          title={blocked ? "Сначала добавьте хотя бы один шаг в конструкторе" : undefined}
-          onClick={() => publication.mutate({ id: tour.id, published: !published })}
-        >
-          {published ? "Снять с публикации" : "Опубликовать"}
-        </button>
-        <button type="button" className="btn btn--danger" onClick={() => setConfirming(true)}>
-          Удалить
-        </button>
+        <Link className="btn" to={`/projects/${projectId}/tours/${tour.id}`}>Открыть</Link>
+        <RowMenu label={`Ещё: ${tour.name}`}>
+          <Link className="btn" to={`/projects/${projectId}/tours/${tour.id}/analytics`}>Аналитика</Link>
+          <button
+            type="button"
+            className="btn"
+            disabled={publication.isPending || blocked}
+            // Публикация тура без шагов отклоняется сервером (422), но кнопку
+            // лучше выключить заранее и сказать почему, чем показать ошибку.
+            title={blocked ? "Сначала добавьте хотя бы один шаг в конструкторе" : undefined}
+            onClick={() => publication.mutate({ id: tour.id, published: !published })}
+          >
+            {published ? "Снять с публикации" : "Опубликовать"}
+          </button>
+          <button type="button" className="btn btn--danger" onClick={() => setConfirming(true)}>
+            Удалить
+          </button>
+        </RowMenu>
       </td>
     </tr>
   );

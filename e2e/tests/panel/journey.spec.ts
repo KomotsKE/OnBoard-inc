@@ -74,7 +74,7 @@ test("от регистрации до пройденного тура на чу
   await page
     .locator('[data-testid="tour-row"]')
     .filter({ hasText: "Знакомство" })
-    .getByRole("link", { name: "Конструктор" })
+    .getByRole("link", { name: "Открыть", exact: true })
     .click();
 
   await page.getByLabel("Условие").selectOption("exact");
