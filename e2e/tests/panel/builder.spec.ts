@@ -3,6 +3,7 @@ import { type Page } from "@playwright/test";
 import { API_URL, STAND_URL } from "../../urls";
 import { expect, test } from "./owner-session";
 import { chooseInMenu } from "./tour-menu";
+import { openNewTourForm } from "./tours-header";
 
 /**
  * Конструктор тура (T3.5).
@@ -65,6 +66,7 @@ test("тур из трёх шагов: сборка, порядок перета
   await page.goto("/projects");
   const card = page.locator('[data-testid="project-card"]').filter({ hasText: "Отчётница" });
   await card.getByRole("link", { name: "Туры", exact: true }).click();
+  await openNewTourForm(page);
   await page.getByLabel("Название нового тура").fill(name);
   await page.getByRole("button", { name: "Создать" }).click();
   const row = page.locator('[data-testid="tour-row"]').filter({ hasText: name });

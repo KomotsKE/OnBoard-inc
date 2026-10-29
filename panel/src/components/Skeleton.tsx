@@ -230,8 +230,17 @@ function ProjectsBody() {
 function ToursBody() {
   return (
     <>
-      <Heading width="8rem" />
-      <NewItemForm />
+      <div className="page__head page__head--action">
+        <div>
+          <h1>
+            <Bone width="8rem" />
+          </h1>
+          <p>
+            <Bone width="20rem" />
+          </p>
+        </div>
+        <Bone width="120px" height={BUTTON_HEIGHT} />
+      </div>
       <div className="table">
         <table>
           <thead>

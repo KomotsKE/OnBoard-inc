@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { TourListItem } from "../api/tours";
-import { completionLabel, matchLabel } from "./ToursPage";
+import { completionLabel, matchLabel, summaryLabel } from "./ToursPage";
 
 function tour(overrides: Partial<TourListItem>): TourListItem {
   return {
@@ -49,5 +49,34 @@ describe("завершение за 7 дней", () => {
     expect(completionLabel(tour({ runs_7d: 20, completion_rate_7d: 0.6 }))).toBe("60 %");
     expect(completionLabel(tour({ runs_7d: 1, completion_rate_7d: 1 }))).toBe("100 %");
     expect(completionLabel(tour({ runs_7d: 7, completion_rate_7d: 0.355 }))).toBe("36 %");
+  });
+});
+
+describe("сводка в шапке", () => {
+  // Числа подобраны так, чтобы окончания не зависели от склонения:
+  // «5 туров», «120 запусков».
+  const list = [
+    tour({ id: "a", status: "published", runs_7d: 100 }),
+    tour({ id: "b", status: "published", runs_7d: 20 }),
+    tour({ id: "c", status: "published", runs_7d: 0 }),
+    tour({ id: "d", status: "draft", runs_7d: 0 }),
+    tour({ id: "e", status: "draft", runs_7d: 0 }),
+  ];
+
+  it("считает туры, опубликованные и сумму запусков", () => {
+    expect(summaryLabel(list)).toBe("5 туров · 3 опубликованы · 120 запусков за 7 дней");
+  });
+
+  it("не считает черновик опубликованным и не теряет его запуски", () => {
+    // Черновик, снятый с публикации, мог набрать запуски до снятия: они были.
+    const withDraftRuns = [...list, tour({ id: "f", status: "draft", runs_7d: 5 })];
+    expect(summaryLabel(withDraftRuns)).toBe(
+      "6 туров · 3 опубликованы · 125 запусков за 7 дней",
+    );
+  });
+
+  it("не показывает долю завершения", () => {
+    // `completed` в ответе списка нет; восстанавливать его из округлённой доли — выдумка.
+    expect(summaryLabel(list)).not.toMatch(/%|заверш/i);
   });
 });

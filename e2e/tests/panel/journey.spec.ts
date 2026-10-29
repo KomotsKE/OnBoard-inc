@@ -69,8 +69,21 @@ test("от регистрации до пройденного тура на чу
   // 4. Тур из двух шагов по элементам чужой страницы.
   await page.goto("/projects");
   await card.getByRole("link", { name: "Туры", exact: true }).click();
+  // Свежий проект: туров нет, форма открыта сразу, переключателя нет вовсе.
+  // Клик по «Новый тур» здесь был бы ошибкой — он закрыл бы форму.
+  await expect(page.getByTestId("skeleton")).toHaveCount(0);
+  await expect(page.getByTestId("tours-empty")).toBeVisible();
+  await expect(page.getByLabel("Название нового тура")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Новый тур", exact: true })).toHaveCount(0);
   await page.getByLabel("Название нового тура").fill("Знакомство");
   await page.getByRole("button", { name: "Создать" }).click();
+  // Первый тур появился, а форма под фокусом не схлопнулась.
+  await expect(page.locator('[data-testid="tour-row"]')).toHaveCount(1);
+  await expect(page.getByLabel("Название нового тура")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Новый тур", exact: true })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
   await page
     .locator('[data-testid="tour-row"]')
     .filter({ hasText: "Знакомство" })

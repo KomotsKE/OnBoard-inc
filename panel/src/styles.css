@@ -487,6 +487,14 @@ p {
   margin-bottom: var(--space-5);
 }
 
+/* Шапка с кнопкой справа — только у экрана туров; сам .page__head общий. */
+.page__head--action {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
 .page__head h1 {
   margin: 0 0 var(--space-2);
 }
@@ -1095,6 +1103,24 @@ p {
   height: 18px;
   background: var(--surface-sunken);
   border-radius: var(--radius-sm);
+}
+
+/* Не шире 40 px: при такой ширине столбец «Завершение» не растёт (T8.9c). */
+.completion__bar {
+  display: block;
+  width: 40px;
+  height: 6px;
+  margin-left: auto;
+  background: var(--surface-sunken);
+  border-radius: var(--radius-sm);
+}
+
+.completion__fill {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
 }
 
 .funnel__fill {

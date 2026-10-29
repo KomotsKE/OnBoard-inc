@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import type { TourListItem, UrlMatch } from "../api/tours";
 import { useCreateTour, useDeleteTour, useTourPublication, useTours } from "../hooks/useTours";
 import { RowMenu } from "../components/RowMenu";
 import { Empty, ErrorState, Loading } from "../components/States";
+import { plural } from "../text";
+
+const NEW_TOUR_FORM_ID = "new-tour-form";
 
 /**
  * S7 docs/screens.md — список туров проекта.
@@ -18,6 +21,24 @@ export function ToursPage() {
   const tours = useTours(projectId);
   const create = useCreateTour(projectId);
   const [name, setName] = useState("");
+  const [open, setOpen] = useState(false);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const userToggled = useRef(false);
+
+  // Фокус двигается только после явного нажатия: при первом показе формы
+  // на пустом списке он остаётся где был.
+  useEffect(() => {
+    if (!userToggled.current) {
+      return;
+    }
+    userToggled.current = false;
+    if (open) {
+      nameRef.current?.focus();
+    } else {
+      toggleRef.current?.focus();
+    }
+  }, [open]);
 
   if (tours.isPending) {
     return <Loading what="туры" shape="tours" />;
@@ -26,40 +47,78 @@ export function ToursPage() {
     return <ErrorState what="туры" onRetry={() => void tours.refetch()} error={tours.error} />;
   }
 
+  const hasTours = tours.data.length > 0;
+  // На пустом списке форма открыта сразу и без кнопки: иначе после первого
+  // тура она схлопнулась бы под фокусом.
+  const formVisible = !hasTours || open;
+
   return (
     <section>
-      <div className="page__head">
-        <h1>Туры</h1>
+      <div className={hasTours ? "page__head page__head--action" : "page__head"}>
+        <div>
+          <h1>Туры</h1>
+          {hasTours ? <p data-testid="tours-summary">{summaryLabel(tours.data)}</p> : null}
+        </div>
+        {hasTours ? (
+          <button
+            ref={toggleRef}
+            type="button"
+            className="btn btn--primary"
+            aria-expanded={formVisible}
+            aria-controls={NEW_TOUR_FORM_ID}
+            onClick={() => {
+              userToggled.current = true;
+              setOpen(!open);
+            }}
+          >
+            Новый тур
+          </button>
+        ) : null}
       </div>
 
-      <form
-        className="projects__new"
-        onSubmit={(event) => {
-          event.preventDefault();
-          const trimmed = name.trim();
-          if (!trimmed) {
-            return;
-          }
-          create.mutate(trimmed, { onSuccess: () => setName("") });
-        }}
-      >
-        <label htmlFor="tour-name">Название нового тура</label>
-        <div className="projects__new-row">
-          <input
-            id="tour-name"
-            value={name}
-            maxLength={200}
-            placeholder="Например: знакомство с отчётами"
-            onChange={(event) => setName(event.target.value)}
-          />
-          <button type="submit" className="btn btn--primary" disabled={create.isPending}>
-            {create.isPending ? "Создаём…" : "Создать"}
-          </button>
-        </div>
-        {create.isError ? <p role="alert">Не удалось создать тур.</p> : null}
-      </form>
+      <div id={NEW_TOUR_FORM_ID} hidden={!formVisible}>
+        <form
+          className="projects__new"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const trimmed = name.trim();
+            if (!trimmed) {
+              return;
+            }
+            // Пустота запоминается при отправке: к ответу список уже обновлён.
+            const wasEmpty = !hasTours;
+            create.mutate(trimmed, {
+              onSuccess: () => {
+                setName("");
+                // Форма на пустом списке была открыта сама; с первым туром
+                // открытость становится явной, а не пропадает. Если туры уже
+                // были, явное решение владельца (в том числе закрыть) не трогаем.
+                if (wasEmpty) {
+                  setOpen(true);
+                }
+              },
+            });
+          }}
+        >
+          <label htmlFor="tour-name">Название нового тура</label>
+          <div className="projects__new-row">
+            <input
+              id="tour-name"
+              ref={nameRef}
+              value={name}
+              maxLength={200}
+              placeholder="Например: знакомство с отчётами"
+              onChange={(event) => setName(event.target.value)}
+            />
+            <button type="submit" className="btn btn--primary" disabled={create.isPending}>
+              {create.isPending ? "Создаём…" : "Создать"}
+            </button>
+          </div>
+          {create.isError ? <p role="alert">Не удалось создать тур.</p> : null}
+        </form>
+      </div>
 
-      {tours.data.length === 0 ? (
+      {!hasTours ? (
         <Empty testId="tours-empty">
           Туров пока нет. Создайте первый — дальше в конструкторе добавите шаги и условие
           показа.
@@ -112,12 +171,32 @@ export function matchLabel(match: UrlMatch): string {
   }
 }
 
+function completionPercent(tour: TourListItem): number {
+  return Math.round(tour.completion_rate_7d * 100);
+}
+
 export function completionLabel(tour: TourListItem): string {
   if (tour.runs_7d === 0) {
     // «0 %» при нуле запусков — не ноль, а отсутствие данных.
     return "—";
   }
-  return `${Math.round(tour.completion_rate_7d * 100)} %`;
+  return `${completionPercent(tour)} %`;
+}
+
+/**
+ * Сводка по загруженному списку. Честна, пока список отдаётся целиком:
+ * `list_with_metrics` без `LIMIT`, а число туров ограничено продуктовым
+ * лимитом «50 туров на проект» (§5 docs/data-model.md). Запуски черновиков
+ * входят в сумму: они были до снятия с публикации.
+ */
+export function summaryLabel(tours: TourListItem[]): string {
+  const published = tours.filter((tour) => tour.status === "published").length;
+  const runs = tours.reduce((sum, tour) => sum + tour.runs_7d, 0);
+  return [
+    plural(tours.length, ["тур", "тура", "туров"]),
+    plural(published, ["опубликован", "опубликованы", "опубликовано"]),
+    `${plural(runs, ["запуск", "запуска", "запусков"])} за 7 дней`,
+  ].join(" · ");
 }
 
 function TourRow({ projectId, tour }: { projectId: string; tour: TourListItem }) {
@@ -160,7 +239,18 @@ function TourRow({ projectId, tour }: { projectId: string; tour: TourListItem })
       <td className="table__number" data-testid="tour-metrics">
         {tour.runs_7d === 0 ? "—" : tour.runs_7d}
       </td>
-      <td className="table__number">{completionLabel(tour)}</td>
+      <td className="table__number">
+        {completionLabel(tour)}
+        {tour.runs_7d === 0 ? null : (
+          <span className="completion__bar" data-testid="completion-bar" aria-hidden="true">
+            <span
+              className="completion__fill"
+              data-testid="completion-fill"
+              style={{ width: `${completionPercent(tour)}%` }}
+            />
+          </span>
+        )}
+      </td>
       <td className="table__actions">
         <Link className="btn" to={`/projects/${projectId}/tours/${tour.id}`}>Открыть</Link>
         <RowMenu label={`Ещё: ${tour.name}`}>
