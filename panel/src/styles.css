@@ -47,6 +47,14 @@
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
+  /* Движение: длительности и кривая в одном месте, иначе каждый экран получит
+     свои значения. Объявлены только здесь: цветом они не являются, и тёмной
+     теме переопределять нечего. */
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --motion-shimmer: 1.4s;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
   /* Превью подсказки показывает чужой сайт, где темы панели нет. Поэтому
      значения виджета зафиксированы и в тёмной теме не переопределяются —
      иначе превью перестанет совпадать с тем, что увидит посетитель
@@ -1158,4 +1166,122 @@ p {
 /* Общие состояния экранов */
 .state {
   color: var(--ink-muted);
+}
+
+/* Движение интерфейса (T8.10).
+   Отклик на наведение — цветом и в покое никакой геометрии не меняет;
+   всё, что движется (переходы, появление, блик скелета, сжатие при нажатии),
+   включено только при `no-preference`: при `reduce` его нет вовсе, а не
+   замедлено. Видимость :focus-visible здесь не трогается. */
+.bone {
+  display: block;
+  max-width: 100%;
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+}
+
+.skeleton__about .bone:last-child,
+.skeleton__snippet {
+  margin-top: var(--space-2);
+}
+
+.skeleton__snippet {
+  margin-bottom: 10px;
+}
+
+.skeleton__fill {
+  width: 100%;
+  height: 100%;
+}
+
+@media (hover: hover) {
+  .btn:not(:disabled):hover {
+    background: var(--surface-sunken);
+    border-color: var(--ink-subtle);
+  }
+
+  .btn--primary:not(:disabled):hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    filter: brightness(1.12);
+  }
+
+  /* В тёмной колонке --surface-sunken остался бы светлым пятном. */
+  .console__aside .btn:not(:disabled):hover {
+    background: var(--surface-muted);
+  }
+
+  .funnel__range .btn[aria-pressed="true"]:hover {
+    background: var(--accent);
+  }
+
+  a:hover {
+    text-decoration-thickness: 2px;
+  }
+
+  .table tbody tr:hover {
+    background: var(--surface-muted);
+  }
+
+  .projects__card:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-card);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .btn,
+  .console__link,
+  .table tbody tr,
+  .projects__card,
+  a {
+    transition-property: background-color, border-color, color, box-shadow, filter,
+      transform, text-decoration-color;
+    transition-duration: var(--motion-fast);
+    transition-timing-function: var(--ease-out);
+  }
+
+  .btn:not(:disabled):active {
+    transform: scale(0.97);
+    filter: brightness(0.94);
+  }
+
+  .console__link:active {
+    transform: scale(0.98);
+  }
+
+  .console__main > *,
+  .auth-screen form {
+    animation: motion-appear var(--motion-base) var(--ease-out);
+  }
+
+  .row-menu {
+    animation: motion-appear var(--motion-fast) var(--ease-out);
+  }
+
+  .bone {
+    background: linear-gradient(
+      90deg,
+      var(--surface-sunken) 0%,
+      var(--border) 50%,
+      var(--surface-sunken) 100%
+    );
+    background-size: 200% 100%;
+    animation: motion-shimmer var(--motion-shimmer) linear infinite;
+  }
+}
+
+@keyframes motion-appear {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes motion-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
 }

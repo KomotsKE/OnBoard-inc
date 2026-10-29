@@ -20,7 +20,7 @@ export function ToursPage() {
   const [name, setName] = useState("");
 
   if (tours.isPending) {
-    return <Loading what="туры" />;
+    return <Loading what="туры" shape="tours" />;
   }
   if (tours.isError) {
     return <ErrorState what="туры" onRetry={() => void tours.refetch()} error={tours.error} />;

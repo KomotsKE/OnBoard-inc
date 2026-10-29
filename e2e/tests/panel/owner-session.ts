@@ -17,11 +17,18 @@ import { DEMO_EMAIL, DEMO_PASSWORD } from "./demo-owner";
  */
 
 export async function signIn(page: Page): Promise<void> {
+  // Первый заход без cookie всё равно получит 401 на обновлении токена, но
+  // успеет потратить REFRESH_BY_IP — а пачка панели и так у его границы.
+  const noSession = "**/v1/auth/refresh";
+  await page.route(noSession, (route) =>
+    route.fulfill({ status: 401, contentType: "application/problem+json", body: "{}" }),
+  );
   await page.goto("/login");
   await page.getByLabel("Почта").fill(DEMO_EMAIL);
   await page.getByLabel("Пароль").fill(DEMO_PASSWORD);
   await page.getByRole("button", { name: "Войти" }).click();
   await expect(page).toHaveURL(/\/projects$/);
+  await page.unroute(noSession);
 }
 
 export const test = base.extend<{ owner: Page }, { ownerContext: BrowserContext }>({

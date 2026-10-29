@@ -35,7 +35,7 @@ export function TourBuilderPage() {
   useRefreshOnFocus(tourId);
 
   if (tour.isPending) {
-    return <Loading what="тур" />;
+    return <Loading what="тур" shape="builder" />;
   }
   if (tour.isError) {
     return <ErrorState what="тур" onRetry={() => void tour.refetch()} error={tour.error} />;

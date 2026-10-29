@@ -18,7 +18,7 @@ export function ProjectsPage() {
   const [name, setName] = useState("");
 
   if (isPending) {
-    return <Loading what="проекты" />;
+    return <Loading what="проекты" shape="projects" />;
   }
   if (isError) {
     return <ErrorState what="проекты" onRetry={() => void refetch()} />;

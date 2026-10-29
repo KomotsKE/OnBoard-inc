@@ -32,7 +32,7 @@ export function BrandingPage() {
   const [draft, setDraft] = useState<Project["theme"] | null>(null);
 
   if (project.isPending) {
-    return <Loading what="оформление" />;
+    return <Loading what="оформление" shape="branding" />;
   }
   if (project.isError) {
     return <ErrorState what="оформление" onRetry={() => void project.refetch()} error={project.error} />;

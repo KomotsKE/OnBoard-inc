@@ -22,7 +22,7 @@ export function AnalyticsPage() {
   const analytics = useAnalytics(tourId, range);
 
   if (analytics.isPending) {
-    return <Loading what="воронку" />;
+    return <Loading what="воронку" shape="analytics" />;
   }
   if (analytics.isError) {
     return <ErrorState what="воронку" onRetry={() => void analytics.refetch()} error={analytics.error} />;

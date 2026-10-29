@@ -29,7 +29,8 @@ TOKENS = (
     "--nav-ink --nav-ink-muted --nav-ok "
     "--space-1 --space-2 --space-3 --space-4 --space-5 --space-6 "
     "--radius-sm --radius-md --radius-lg --radius-pill "
-    "--shadow-card --shadow-tooltip --font-sans --font-mono"
+    "--shadow-card --shadow-tooltip --font-sans --font-mono "
+    "--motion-fast --motion-base --motion-shimmer --ease-out"
 ).split()
 
 ALIASES = ("--onboard-radius", "--onboard-font", "--panel-border", "--panel-space")

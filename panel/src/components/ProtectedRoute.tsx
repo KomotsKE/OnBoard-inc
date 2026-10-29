@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 
+import { Skeleton } from "./Skeleton";
 import { useAuth } from "./AuthProvider";
 
 /**
@@ -13,8 +14,10 @@ export function ProtectedRoute() {
 
   if (status === "loading") {
     return (
+      // Форма одна для всех адресов: до восстановления сессии маршрут ещё не
+      // отрисован. Компромисс — при прямой ссылке на другой экран форма сменится.
       <main>
-        <p data-testid="session-splash">Проверяем сессию…</p>
+        <Skeleton what="сессию" shape="projects" />
       </main>
     );
   }

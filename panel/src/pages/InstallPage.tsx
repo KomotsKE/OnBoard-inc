@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 
 import { ApiError } from "../api/client";
+import { SnippetSkeleton } from "../components/Skeleton";
 import { ErrorState, Loading } from "../components/States";
 import { useAllowedOrigins, useProject, useSnippet } from "../hooks/useProjects";
 
@@ -19,7 +20,7 @@ export function InstallPage() {
   const snippet = useSnippet(projectId);
 
   if (project.isPending) {
-    return <Loading what="проект" />;
+    return <Loading what="проект" shape="install" />;
   }
   if (project.isError) {
     return <ErrorState what="проект" onRetry={() => void project.refetch()} error={project.error} />;
@@ -69,7 +70,7 @@ function Snippet({ text, failed }: { text?: string; failed: boolean }) {
     return <p role="alert">Не удалось получить сниппет.</p>;
   }
   if (!text) {
-    return <p>Готовим сниппет…</p>;
+    return <SnippetSkeleton />;
   }
 
   return (

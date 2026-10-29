@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 import { ApiError } from "../api/client";
+import { Skeleton, type SkeletonShape } from "./Skeleton";
 
 /**
  * Три состояния, которые обязаны быть обработаны у каждого экрана: загрузка,
@@ -12,8 +13,8 @@ import { ApiError } from "../api/client";
  * экранах: до этого один и тот же блок был скопирован в пять файлов.
  */
 
-export function Loading({ what }: { what: string }) {
-  return <p className="state">Загружаем {what}…</p>;
+export function Loading({ what, shape }: { what: string; shape: SkeletonShape }) {
+  return <Skeleton what={what} shape={shape} />;
 }
 
 /**
